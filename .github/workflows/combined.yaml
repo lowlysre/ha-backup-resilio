@@ -109,11 +109,20 @@ jobs:
       run: docker compose down -v
 
   resilio-client-e2e:
-    name: resilio-client CLI E2E (docker)
+    name: resilio-client CLI E2E (docker, resilio/sync:${{ matrix.resilio_version }})
 
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      # Run every pinned version even if one fails, so a single bad release
+      # doesn't hide drift in the others.
+      fail-fast: false
+      matrix:
+        # Small, deliberate spread of resilio/sync tags: the current stable
+        # release plus a couple of older widely-deployed releases, so a
+        # WebUI API change in one version doesn't silently slip past CI.
+        resilio_version: ["2.8.1", "2.7.3", "2.7.2"]
 
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -129,6 +138,8 @@ jobs:
         pip install -e .
     - name: Start a Resilio Sync container
       working-directory: tools/cli_e2e
+      env:
+        RESILIO_IMAGE_TAG: ${{ matrix.resilio_version }}
       run: docker compose up -d
     - name: Run resilio-client CLI E2E flow
       # The container can accept TCP connections before rslsync has finished
