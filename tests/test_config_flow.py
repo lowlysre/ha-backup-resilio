@@ -506,25 +506,79 @@ async def test_reauth_flow_invalid_auth(hass, mock_client) -> None:
 
 
 async def test_reconfigure_flow_updates_connection(hass, mock_client) -> None:
-    """Reconfigure validates and stores updated connection details."""
+    """Reconfigure validates connection details, then re-confirms the same
+    folder/backup path (preselected as defaults) before applying the update.
+    """
     assert mock_client is not None
     entry = build_mock_entry(hass)
     entry.add_to_hass(hass)
+    original_backup_path = entry.data[CONF_BACKUP_PATH]
 
     result = await entry.start_reconfigure_flow(hass)
     assert result["step_id"] == "reconfigure"
 
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**MOCK_USER_INPUT, "host": "new-resilio.local"}
+    )
+    assert result["step_id"] == "folder"
+
+    # The entry's current folder is preselected as the default choice.
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    # Re-submitting the existing (mismatched) backup path warns once...
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BACKUP_PATH: original_backup_path}
+    )
+    assert result["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    # ...and confirms on a repeat submission.
     with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {**MOCK_USER_INPUT, "host": "new-resilio.local"}
+            result["flow_id"], {CONF_BACKUP_PATH: original_backup_path}
         )
         await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert entry.data["host"] == "new-resilio.local"
+    assert entry.data[CONF_BACKUP_PATH] == original_backup_path
     assert entry.unique_id == f"new-resilio.local:{entry.data['port']}"
     schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_reconfigure_flow_change_folder(hass, mock_client) -> None:
+    """Reconfigure can switch to a different Resilio folder."""
+    other_folder = {**MOCK_FOLDER, "id": "otherfolder", "path": "D:\\Other\\Backups"}
+    mock_client.get_folders.return_value = [MOCK_FOLDER, other_folder]
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], MOCK_USER_INPUT
+    )
+    assert result["step_id"] == "folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": other_folder["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+    assert result["description_placeholders"]["folder_path"] == other_folder["path"]
+
+    with patch.object(hass.config_entries, "async_schedule_reload"):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_BACKUP_PATH: other_folder["path"]}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_FOLDER_ID] == other_folder["id"]
+    assert entry.data[CONF_FOLDER_PATH] == other_folder["path"]
+    assert entry.data[CONF_BACKUP_PATH] == other_folder["path"]
 
 
 async def test_reconfigure_flow_already_configured(hass, mock_client) -> None:
