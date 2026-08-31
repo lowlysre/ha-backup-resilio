@@ -440,6 +440,14 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             if peer_invite_sent
                             else "reconfigure_successful"
                         ),
+                        # A same-data reconfigure still forces an unload/setup
+                        # cycle by default, and HA's backup manager can lose
+                        # track of our agent across that unload window (see
+                        # lowlysre/ha-backup-resilio#30): it shows up under
+                        # "Unavailable locations" until a full HA restart.
+                        # Skipping the reload when nothing actually changed
+                        # avoids that window entirely.
+                        reload_even_if_entry_is_unchanged=False,
                     )
                 return self.async_create_entry(
                     title=f"Resilio Sync ({self._data[CONF_HOST]})",
