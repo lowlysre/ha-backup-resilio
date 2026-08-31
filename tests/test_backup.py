@@ -21,6 +21,7 @@ from custom_components.resilio_backup.const import (
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
     DOMAIN,
+    EVENT_BACKUPS_PRUNED,
     SERVICE_PRUNE_BACKUPS,
 )
 from tests.common import build_agent_backup, build_backup_dir, build_mock_entry, setup_integration
@@ -232,6 +233,48 @@ async def test_pruning_respects_unlimited_setting(hass) -> None:
         hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 0}
     )
     assert await async_prune_backups(hass, entry) == 0
+
+
+async def test_pruning_fires_event_when_backups_are_deleted(hass) -> None:
+    """A logbook-visible event fires when pruning deletes backups."""
+    entry = build_mock_entry(
+        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 0}
+    )
+    agent = ResilioBackupAgent(hass, entry)
+    for backup_id in ("backup1", "backup2"):
+        await agent.async_upload_backup(
+            open_stream=lambda backup_id=backup_id: _open_stream([backup_id.encode()]),
+            backup=build_agent_backup(backup_id),
+            on_progress=lambda **kwargs: None,
+        )
+
+    pruning_entry = build_mock_entry(
+        hass,
+        backup_path=entry.data["backup_path"],
+        options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 1},
+    )
+    events: list = []
+    hass.bus.async_listen(EVENT_BACKUPS_PRUNED, events.append)
+
+    assert await async_prune_backups(hass, pruning_entry) == 1
+    await hass.async_block_till_done()
+
+    assert len(events) == 1
+    assert events[0].data == {"entry_id": pruning_entry.entry_id, "deleted": 1}
+
+
+async def test_pruning_no_event_when_nothing_is_deleted(hass) -> None:
+    """No event fires when pruning has nothing to delete."""
+    entry = build_mock_entry(
+        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 1}
+    )
+    events: list = []
+    hass.bus.async_listen(EVENT_BACKUPS_PRUNED, events.append)
+
+    assert await async_prune_backups(hass, entry) == 0
+    await hass.async_block_till_done()
+
+    assert not events
 
 
 async def test_prune_service_end_to_end(hass, aioclient_mock) -> None:

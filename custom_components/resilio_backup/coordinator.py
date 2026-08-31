@@ -14,7 +14,12 @@ from .api import (
     ResilioConnectionError,
     ResilioFolderNotFoundError,
 )
-from .const import CONF_FOLDER_ID, SCAN_INTERVAL
+from .const import (
+    CONF_FOLDER_ID,
+    EVENT_FILE_COUNT_CHANGED,
+    EVENT_PEER_COUNT_CHANGED,
+    SCAN_INTERVAL,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,7 +86,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
         ) as err:
             raise UpdateFailed(str(err)) from err
 
-        return ResilioFolderStatus(
+        status = ResilioFolderStatus(
             folder_id=str(folder.get("id", self._entry.data[CONF_FOLDER_ID])),
             name=str(
                 folder.get("name")
@@ -94,3 +99,31 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             peers=_safe_int(folder.get("peers")),
             state=str(folder.get("state", "unknown")).lower(),
         )
+        self._fire_change_events(status)
+        return status
+
+    def _fire_change_events(self, status: ResilioFolderStatus) -> None:
+        """Fire logbook-visible events when peer or file counts change."""
+        previous = self.data
+        if previous is None:
+            return
+
+        if status.peers != previous.peers:
+            self.hass.bus.async_fire(
+                EVENT_PEER_COUNT_CHANGED,
+                {
+                    "entry_id": self._entry.entry_id,
+                    "previous": previous.peers,
+                    "current": status.peers,
+                },
+            )
+
+        if status.files != previous.files:
+            self.hass.bus.async_fire(
+                EVENT_FILE_COUNT_CHANGED,
+                {
+                    "entry_id": self._entry.entry_id,
+                    "previous": previous.files,
+                    "current": status.files,
+                },
+            )

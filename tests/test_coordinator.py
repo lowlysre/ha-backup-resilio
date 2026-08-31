@@ -13,6 +13,10 @@ from custom_components.resilio_backup.api import (
     ResilioConnectionError,
     ResilioFolderNotFoundError,
 )
+from custom_components.resilio_backup.const import (
+    EVENT_FILE_COUNT_CHANGED,
+    EVENT_PEER_COUNT_CHANGED,
+)
 from custom_components.resilio_backup.coordinator import (
     ResilioDataUpdateCoordinator,
     _safe_int,
@@ -96,3 +100,80 @@ async def test_coordinator_failures_map_to_update_failed(hass, exception) -> Non
 
     with pytest.raises(UpdateFailed):
         await coordinator.async_test_update()
+
+
+async def test_no_events_fire_on_first_update(hass) -> None:
+    """No change events fire when there's no previous fetch to compare against."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    events: list = []
+    hass.bus.async_listen(EVENT_PEER_COUNT_CHANGED, events.append)
+    hass.bus.async_listen(EVENT_FILE_COUNT_CHANGED, events.append)
+
+    await coordinator.async_test_update()
+    await hass.async_block_till_done()
+
+    assert not events
+
+
+async def test_no_events_fire_when_counts_are_unchanged(hass) -> None:
+    """No change events fire when peers and files stay the same."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    coordinator.data = await coordinator.async_test_update()
+    events: list = []
+    hass.bus.async_listen(EVENT_PEER_COUNT_CHANGED, events.append)
+    hass.bus.async_listen(EVENT_FILE_COUNT_CHANGED, events.append)
+
+    await coordinator.async_test_update()
+    await hass.async_block_till_done()
+
+    assert not events
+
+
+async def test_peer_count_change_fires_event(hass) -> None:
+    """A peer count change fires an event with the before/after counts."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    coordinator.data = await coordinator.async_test_update()
+    events: list = []
+    hass.bus.async_listen(EVENT_PEER_COUNT_CHANGED, events.append)
+    client.async_get_folder.return_value = {**MOCK_FOLDER, "peers": 5}
+
+    await coordinator.async_test_update()
+    await hass.async_block_till_done()
+
+    assert len(events) == 1
+    assert events[0].data == {
+        "entry_id": entry.entry_id,
+        "previous": 3,
+        "current": 5,
+    }
+
+
+async def test_file_count_change_fires_event(hass) -> None:
+    """A file count change fires an event with the before/after counts."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    coordinator.data = await coordinator.async_test_update()
+    events: list = []
+    hass.bus.async_listen(EVENT_FILE_COUNT_CHANGED, events.append)
+    client.async_get_folder.return_value = {**MOCK_FOLDER, "files": 20}
+
+    await coordinator.async_test_update()
+    await hass.async_block_till_done()
+
+    assert len(events) == 1
+    assert events[0].data == {
+        "entry_id": entry.entry_id,
+        "previous": 16,
+        "current": 20,
+    }
