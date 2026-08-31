@@ -64,7 +64,7 @@ Assistant, and password-protected**: this isn't automatic on every install:
 
 ## Documentation
 
-- **[Usage](docs/usage.md)**: entities, automation examples, and options.
-- **[How it works](docs/how-it-works.md)**: backup format, the Resilio API this integration drives, and the standalone CLIs.
-- **[Troubleshooting](docs/troubleshooting.md)**: known limitations, common setup errors, and removing the integration.
+- [Usage](docs/usage.md): entities, automation examples, and options.
+- [How it works](docs/how-it-works.md): backup format, the Resilio API this integration drives, and the standalone CLIs.
+- [Troubleshooting](docs/troubleshooting.md): known limitations, common setup errors, and removing the integration.
 
