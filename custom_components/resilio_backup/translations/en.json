@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Backup path"
         },
-        "description": "This is the local path Home Assistant writes each backup's `.tar`/`.json` files into. Resilio then replicates whatever it finds inside its own folder to your other devices, so this path should normally be the Resilio folder's own path (pre-filled below) or a location inside it.\n\nSelected folder: **{folder_name}** ({folder_path})\n\nAfter this step, Home Assistant will send you a notification with a peer-invite link and QR code so you can quickly add another device to this folder. You can skip that and add peers directly in the Resilio Sync WebUI instead.",
+        "description": "This is the local path Home Assistant writes each backup's `.tar`/`.json` files into. Resilio then replicates whatever it finds inside its own folder to your other devices, so this path should normally be the Resilio folder's own path (pre-filled below) or a location inside it.\n\nSelected folder: **{folder_name}** ({folder_path})\n\nAfter this step, Home Assistant will send you a notification with a peer-invite link and QR code so you can quickly add another device to this folder. If you'd rather add peers yourself, you can do that anytime from the Resilio Sync WebUI.",
         "title": "Choose backup path"
       },
       "folder": {
