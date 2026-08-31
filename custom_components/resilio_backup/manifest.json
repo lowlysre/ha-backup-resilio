@@ -9,6 +9,7 @@
     "backup"
   ],
   "documentation": "https://github.com/lowlysre/ha-backup-resilio/blob/main/README.md",
+  "homeassistant": "2024.12.0",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/lowlysre/ha-backup-resilio/issues",
   "requirements": [

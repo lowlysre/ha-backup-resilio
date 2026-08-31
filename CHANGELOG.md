@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   QR code) as a persistent notification once the entry is created.
 - `scan_interval` option to configure how often the coordinator polls the Resilio Sync API (default 60s, minimum 10s).
 - Reauth flow: rejected credentials now prompt for a password update instead of leaving entities unavailable.
+- `manifest.json` now declares a minimum supported Home Assistant version (2024.12.0), matching `hacs.json`, so HA core blocks setup on older installs instead of failing at runtime.
 
 ## [0.1.0] - 2026-08-30
 
