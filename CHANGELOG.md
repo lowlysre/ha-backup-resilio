@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reconfigure flow to update connection details without removing and re-adding the integration.
 - Diagnostic and troubleshooting documentation, entity/use-case tables, and automation examples in the README.
 - `quality_scale.yaml` self-assessment tracking this integration's alignment with Home Assistant's Integration Quality Scale.
+- A repair issue when the configured Resilio folder is missing or renamed, since retrying the poll won't fix it.
 
 ### Changed
 

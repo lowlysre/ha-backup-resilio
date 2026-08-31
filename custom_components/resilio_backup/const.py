@@ -25,3 +25,5 @@ SERVICE_PRUNE_BACKUPS = "prune_backups"
 EVENT_PEER_COUNT_CHANGED = f"{DOMAIN}_peer_count_changed"
 EVENT_FILE_COUNT_CHANGED = f"{DOMAIN}_file_count_changed"
 EVENT_BACKUPS_PRUNED = f"{DOMAIN}_backups_pruned"
+
+ISSUE_FOLDER_NOT_FOUND = "folder_not_found"

@@ -8,6 +8,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -21,8 +22,10 @@ from .const import (
     CONF_FOLDER_ID,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     EVENT_FILE_COUNT_CHANGED,
     EVENT_PEER_COUNT_CHANGED,
+    ISSUE_FOLDER_NOT_FOUND,
 )
 from .folder_state import derive_sync_state, safe_int
 
@@ -69,6 +72,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
         )
         self._entry = entry
         self._client = client
+        self._folder_not_found_issue_id = f"{ISSUE_FOLDER_NOT_FOUND}_{entry.entry_id}"
 
     async def _async_update_data(self) -> ResilioFolderStatus:
         """Fetch the latest folder status."""
@@ -76,11 +80,26 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             folder = await self._client.async_get_folder(self._entry.data[CONF_FOLDER_ID])
         except ResilioAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
-        except (
-            ResilioConnectionError,
-            ResilioFolderNotFoundError,
-        ) as err:
+        except ResilioFolderNotFoundError as err:
+            # The folder was removed or renamed on the Resilio side; retrying
+            # won't fix this, so raise a repair issue pointing the user at
+            # reconfigure instead of just leaving entities unavailable.
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                self._folder_not_found_issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key=ISSUE_FOLDER_NOT_FOUND,
+                translation_placeholders={
+                    "folder_id": self._entry.data[CONF_FOLDER_ID]
+                },
+            )
             raise UpdateFailed(str(err)) from err
+        except ResilioConnectionError as err:
+            raise UpdateFailed(str(err)) from err
+
+        ir.async_delete_issue(self.hass, DOMAIN, self._folder_not_found_issue_id)
 
         status = ResilioFolderStatus(
             folder_id=str(folder.get("id", self._entry.data[CONF_FOLDER_ID])),

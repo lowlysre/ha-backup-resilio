@@ -71,17 +71,23 @@ rules:
   entity-category: done
   entity-device-class: done
   entity-disabled-by-default:
-    status: todo
-    comment: No entity is currently disabled by default; worth revisiting once usage patterns are clearer.
+    status: exempt
+    comment: >-
+      Each config entry exposes exactly one of each entity, none of them
+      noisy, rarely useful, or expensive to poll (all come from the same
+      single folder-status API call), so there's nothing to opt out of by
+      default.
   entity-translations: done
   exception-translations: done
   icon-translations: done
   reconfiguration-flow: done
   repair-issues:
-    status: exempt
+    status: done
     comment: >-
-      No actionable repair scenarios. Auth failures go through the reauth flow and
-      connection failures surface as unavailable entities via the coordinator.
+      Auth failures go through the reauth flow; a missing/renamed Resilio
+      folder raises a repair issue since retrying won't fix it (the folder
+      was removed or renamed on the Resilio side), clearing once the folder
+      is reachable again.
   stale-devices:
     status: exempt
     comment: Each config entry always creates exactly one static device; there are no dynamically-added devices to go stale.

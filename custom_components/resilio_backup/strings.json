@@ -134,5 +134,11 @@
     "upload_backup_failed": {
       "message": "Failed to store backup {backup_id}."
     }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "Resilio folder no longer exists",
+      "description": "The Resilio folder configured for this entry (`{folder_id}`) is no longer present on the Resilio Sync server. Recreate the folder with the same ID on the Resilio side, or remove and re-add this integration to select a different folder."
+    }
   }
 }

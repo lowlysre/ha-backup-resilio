@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -18,8 +19,10 @@ from custom_components.resilio_backup.api import (
 from custom_components.resilio_backup.const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     EVENT_FILE_COUNT_CHANGED,
     EVENT_PEER_COUNT_CHANGED,
+    ISSUE_FOLDER_NOT_FOUND,
 )
 from custom_components.resilio_backup.coordinator import (
     ResilioDataUpdateCoordinator,
@@ -159,6 +162,42 @@ async def test_coordinator_auth_failure_triggers_reauth(hass) -> None:
 
     with pytest.raises(ConfigEntryAuthFailed):
         await coordinator.async_test_update()
+
+
+async def test_coordinator_folder_not_found_raises_repair_issue(hass) -> None:
+    """A missing folder raises a repair issue pointing at reconfigure/recreate."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.side_effect = ResilioFolderNotFoundError("missing")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator.async_test_update()
+
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, f"{ISSUE_FOLDER_NOT_FOUND}_{entry.entry_id}"
+    )
+    assert issue is not None
+    assert issue.translation_key == ISSUE_FOLDER_NOT_FOUND
+
+
+async def test_coordinator_clears_repair_issue_on_recovery(hass) -> None:
+    """A successful update after a missing folder clears the repair issue."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.side_effect = ResilioFolderNotFoundError("missing")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    issue_id = f"{ISSUE_FOLDER_NOT_FOUND}_{entry.entry_id}"
+
+    with pytest.raises(UpdateFailed):
+        await coordinator.async_test_update()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+    client.async_get_folder.side_effect = None
+    client.async_get_folder.return_value = MOCK_FOLDER
+    await coordinator.async_test_update()
+
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
 
 
 async def test_no_events_fire_on_first_update(hass) -> None:
