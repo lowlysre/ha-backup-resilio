@@ -14,6 +14,9 @@
 > [!WARNING]
 > Resilio Sync is a third-party product. Use it at your own risk.
 
+> [!NOTE]
+> Non-English translations under [`translations`](custom_components/resilio_backup/translations) are AI-generated and may be inaccurate. Corrections via PR against the relevant locale file are welcome and appreciated.
+
 ## Installation
 
 ### HACS
