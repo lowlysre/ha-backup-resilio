@@ -568,6 +568,13 @@ async def test_reconfigure_flow_change_folder(hass, mock_client) -> None:
     assert result["step_id"] == "backup_path"
     assert result["description_placeholders"]["folder_path"] == other_folder["path"]
 
+    # The pre-filled default follows the newly selected folder, not the
+    # entry's stale backup path from the folder it previously had.
+    backup_field = next(
+        key for key in result["data_schema"].schema if getattr(key, "schema", None) == "backup_path"
+    )
+    assert backup_field.default() == other_folder["path"]
+
     with patch.object(hass.config_entries, "async_schedule_reload"):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_BACKUP_PATH: other_folder["path"]}

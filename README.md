@@ -39,12 +39,13 @@
 The Resilio Sync agent must have its WebUI/HTTP API **enabled, network-reachable from Home
 Assistant, and password-protected**. This isn't automatic on every install:
 
-- Linux and NAS builds expose it by default; Windows/macOS desktop apps usually need it turned
-  on explicitly (`webui.listen`) since they don't run as a service.
-- It listens on `127.0.0.1` unless configured to listen on a LAN address, so a Resilio agent
-  running on a different machine than Home Assistant needs that changed too.
-- Mobile (iOS/Android) Resilio Sync apps sync files but do not expose this API at all, so they
-  can't be used as the target for this integration.
+| Platform | HTTP API available | On by default | Default listen address |
+| --- | --- | --- | --- |
+| Linux / NAS builds | ✅ Yes | ✅ Yes (runs as a service) | `127.0.0.1` until `webui.listen` is set to a LAN address |
+| Windows / macOS desktop apps | ✅ Yes | ❌ No — needs `webui.listen` set explicitly | `127.0.0.1` until `webui.listen` is set to a LAN address |
+| iOS / Android apps | ❌ No | N/A | N/A — can't be used as the target for this integration |
+
+On every platform the WebUI/HTTP API defaults to listening on `127.0.0.1`, so if the Resilio agent runs on a different machine than Home Assistant, `webui.listen` must be changed to a LAN address to be reachable.
 
 ## Setup
 

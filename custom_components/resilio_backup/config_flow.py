@@ -85,6 +85,12 @@ def _strip_url_scheme(host: str) -> str:
     return host.split("/", 1)[0]
 
 
+def _is_within_folder(path: str, folder_path: str) -> bool:
+    """Check whether `path` is `folder_path` itself or nested inside it."""
+    sep = "\\" if "\\" in folder_path else "/"
+    return path == folder_path or path.startswith(folder_path.rstrip(sep) + sep)
+
+
 class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Resilio Backup."""
 
@@ -369,6 +375,16 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         folder_path = str(self._folder.get("path", ""))
         folder_name = str(self._folder.get("name") or folder_path or self._folder.get("id", ""))
+        existing_backup_path = self._data.get(CONF_BACKUP_PATH)
+        if existing_backup_path and folder_path and not _is_within_folder(
+            existing_backup_path, folder_path
+        ):
+            # The stored value belongs to a folder other than the one
+            # currently selected (its folder id/path may have been
+            # reconfigured, or renamed on the Resilio side): it would
+            # silently write backups outside the folder, so don't offer
+            # it as the default.
+            existing_backup_path = None
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
@@ -410,7 +426,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_BACKUP_PATH,
                         default=(user_input or {}).get(CONF_BACKUP_PATH)
-                        or self._data.get(CONF_BACKUP_PATH)
+                        or existing_backup_path
                         or folder_path,
                     ): str,
                 }
