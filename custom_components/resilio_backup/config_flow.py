@@ -37,12 +37,14 @@ from .const import (
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_PEER_INVITE,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
     DEFAULT_PRUNE_ENABLED,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SEND_PEER_INVITE,
     DEFAULT_USE_SSL,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
@@ -403,6 +405,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
+            send_peer_invite = bool(
+                user_input.get(CONF_SEND_PEER_INVITE, DEFAULT_SEND_PEER_INVITE)
+            )
             if not backup_path:
                 errors[CONF_BACKUP_PATH] = "required"
             elif (
@@ -416,7 +421,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._pending_backup_path = backup_path
                 errors[CONF_BACKUP_PATH] = "path_mismatch"
             else:
-                await self._async_notify_peer_invite()
+                peer_invite_sent = (
+                    await self._async_notify_peer_invite() if send_peer_invite else False
+                )
                 final_data = {
                     **self._data,
                     CONF_FOLDER_ID: str(self._folder["id"]),
@@ -428,6 +435,11 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._get_reconfigure_entry(),
                         unique_id=f"{self._data[CONF_HOST]}:{self._data[CONF_PORT]}",
                         data=final_data,
+                        reason=(
+                            "reconfigure_successful_peer_invite"
+                            if peer_invite_sent
+                            else "reconfigure_successful"
+                        ),
                     )
                 return self.async_create_entry(
                     title=f"Resilio Sync ({self._data[CONF_HOST]})",
@@ -444,6 +456,12 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         or existing_backup_path
                         or folder_path,
                     ): str,
+                    vol.Required(
+                        CONF_SEND_PEER_INVITE,
+                        default=(user_input or {}).get(
+                            CONF_SEND_PEER_INVITE, DEFAULT_SEND_PEER_INVITE
+                        ),
+                    ): bool,
                 }
             ),
             errors=errors,
@@ -453,12 +471,14 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def _async_notify_peer_invite(self) -> None:
+    async def _async_notify_peer_invite(self) -> bool:
         """Best-effort: post a notification with a peer-invite link for the folder.
 
         Not fatal if Resilio can't produce one (unlicensed agents, in
         particular, silently return an empty link for some folder/permission
-        combinations); the config entry is created either way.
+        combinations); the config entry is created either way. Returns
+        whether a notification was actually created, so callers can tailor
+        their follow-up messaging.
         """
         try:
             link = await self._get_client().async_get_share_link(
@@ -466,10 +486,10 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         except ResilioApiError:
             LOGGER.debug("Could not generate a Resilio peer-invite link", exc_info=True)
-            return
+            return False
 
         if not link:
-            return
+            return False
 
         message = (
             "Share this link with another device to add it as a peer for "
@@ -490,6 +510,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             title="Resilio Backup: invite a peer",
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
         )
+        return True
 
 
 class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):

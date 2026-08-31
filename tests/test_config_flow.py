@@ -25,6 +25,7 @@ from custom_components.resilio_backup.const import (
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_PEER_INVITE,
     DOMAIN,
 )
 from tests.common import MOCK_FOLDER, MOCK_USER_INPUT, build_mock_entry
@@ -483,6 +484,40 @@ async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client)
     assert "data:image/png;base64" not in message
 
 
+async def test_backup_path_send_peer_invite_defaults_true(hass, mock_client) -> None:
+    """The peer-invite checkbox defaults to on, preserving prior behavior."""
+    assert mock_client is not None
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    result = await flow.async_step_backup_path({})
+
+    invite_field = next(
+        key
+        for key in result["data_schema"].schema
+        if getattr(key, "schema", None) == CONF_SEND_PEER_INVITE
+    )
+    assert invite_field.default() is True
+
+
+async def test_backup_path_send_peer_invite_false_skips_notification(hass, mock_client) -> None:
+    """Unchecking the peer-invite box skips the notification even with a valid link."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with patch(
+        "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+    ) as notify:
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: False}
+        )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_not_called()
+    mock_client.get_share_link.assert_not_awaited()
+
+
 async def test_reauth_flow_updates_credentials(hass, mock_client) -> None:
     """Reauth validates and stores updated credentials, then reloads the entry."""
     assert mock_client is not None
@@ -601,6 +636,37 @@ async def test_reconfigure_flow_change_folder(hass, mock_client) -> None:
     assert entry.data[CONF_FOLDER_ID] == other_folder["id"]
     assert entry.data[CONF_FOLDER_PATH] == other_folder["path"]
     assert entry.data[CONF_BACKUP_PATH] == other_folder["path"]
+
+
+async def test_reconfigure_flow_reports_peer_invite_sent(hass, mock_client) -> None:
+    """The abort reason calls out the peer-invite notification when one was posted."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], MOCK_USER_INPUT)
+    assert result["step_id"] == "folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    with (
+        patch.object(hass.config_entries, "async_schedule_reload"),
+        patch(
+            "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+        ) as notify,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_BACKUP_PATH: MOCK_FOLDER["path"]}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful_peer_invite"
+    notify.assert_called_once()
 
 
 async def test_reconfigure_flow_already_configured(hass, mock_client) -> None:

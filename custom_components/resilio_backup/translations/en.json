@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "This Resilio endpoint is already configured.",
       "reauth_successful": "Re-authentication was successful.",
-      "reconfigure_successful": "Reconfiguration was successful."
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "reconfigure_successful_peer_invite": "Reconfiguration was successful. Check Notifications for the peer-invite link and QR code."
     },
     "error": {
       "cannot_connect": "Failed to connect to the Resilio API.",
@@ -15,9 +16,13 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Backup path"
+          "backup_path": "Backup path",
+          "send_peer_invite": "Send a peer-invite notification"
         },
-        "description": "This is the local path Home Assistant writes each backup's `.tar`/`.json` files into. Resilio then replicates whatever it finds inside its own folder to your other devices, so this path should normally be the Resilio folder's own path (pre-filled below) or a location inside it.\n\nSelected folder: **{folder_name}** ({folder_path})\n\nAfter this step, Home Assistant will send you a notification with a peer-invite link and QR code so you can quickly add another device to this folder. If you'd rather add peers yourself, you can do that anytime from the Resilio Sync WebUI.",
+        "data_description": {
+          "send_peer_invite": "Adds a notification with a join link and QR code for this folder. Anyone with the link can join as a peer, so turn this off if you've already added the peers you need."
+        },
+        "description": "This is the local path Home Assistant writes each backup's `.tar`/`.json` files into. Resilio then replicates whatever it finds inside its own folder to your other devices, so this path should normally be the Resilio folder's own path (pre-filled below) or a location inside it.\n\nSelected folder: **{folder_name}** ({folder_path})",
         "title": "Choose backup path"
       },
       "folder": {
