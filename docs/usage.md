@@ -9,9 +9,9 @@ The integration also creates:
 
 ## Use cases
 
-- **Off-site copy of Core/Container backups.** Point `backup_path` at a Resilio-synced folder so every backup Home Assistant writes automatically replicates to a NAS, a remote server, or another peer, no extra automation required.
-- **Multi-site redundancy.** Add the same Resilio folder as a backup location on more than one Home Assistant instance so each keeps a synced copy of the others' backups.
-- **Sync health monitoring.** The sensors and binary sensor let you build automations or dashboards around backup replication, e.g. alerting when a backup hasn't synced to peers within an expected window.
+- Off-site copy of Core/Container backups: point `backup_path` at a Resilio-synced folder so every backup Home Assistant writes automatically replicates to a NAS, a remote server, or another peer, no extra automation required.
+- Multi-site redundancy: add the same Resilio folder as a backup location on more than one Home Assistant instance so each keeps a synced copy of the others' backups.
+- Sync health monitoring: the sensors and binary sensor let you build automations or dashboards around backup replication, e.g. alerting when a backup hasn't synced to peers within an expected window.
 
 ## Entities
 

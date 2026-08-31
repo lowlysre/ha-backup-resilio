@@ -37,7 +37,7 @@
 ## Before you start
 
 The Resilio Sync agent must have its WebUI/HTTP API **enabled, network-reachable from Home
-Assistant, and password-protected**: this isn't automatic on every install:
+Assistant, and password-protected**. This isn't automatic on every install:
 
 - Linux and NAS builds expose it by default; Windows/macOS desktop apps usually need it turned
   on explicitly (`webui.listen`) since they don't run as a service.

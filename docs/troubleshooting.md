@@ -2,11 +2,11 @@
 
 ## Known limitations
 
-- **No push updates.** The undocumented `/gui/` API has no webhook or streaming support, so sensor state is only as fresh as the last 60-second poll.
-- **No device discovery.** Resilio Sync doesn't advertise itself over the network (no zeroconf/SSDP/DHCP), so setup always requires manually entering `host`/`port`.
-- **Single Resilio folder per config entry.** Each config entry tracks one Resilio folder; add another entry to back up to a second folder.
-- **No update entity.** This integration cannot update the Resilio Sync agent's software itself; do that from the Resilio app or OS package manager.
-- **Free-tier API only.** Resilio's documented, license-gated `/api/v2` isn't used; see [Resilio's API](how-it-works.md#resilios-api) for why, and for what that means if Resilio changes the WebUI's internal API.
+- No push updates: the undocumented `/gui/` API has no webhook or streaming support, so sensor state is only as fresh as the last 60-second poll.
+- No device discovery: Resilio Sync doesn't advertise itself over the network (no zeroconf/SSDP/DHCP), so setup always requires manually entering `host`/`port`.
+- Single Resilio folder per config entry: each config entry tracks one Resilio folder; add another entry to back up to a second folder.
+- No update entity: this integration cannot update the Resilio Sync agent's software itself; do that from the Resilio app or OS package manager.
+- Free-tier API only: Resilio's documented, license-gated `/api/v2` isn't used; see [Resilio's API](how-it-works.md#resilios-api) for why, and for what that means if Resilio changes the WebUI's internal API.
 
 ## Setup fails with "Failed to connect to the Resilio API"
 
