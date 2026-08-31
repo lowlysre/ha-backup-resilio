@@ -1,7 +1,9 @@
 # How it works
 
 ```mermaid
+%%{init: {"theme": "dark", "flowchart": {"padding": 14}, "themeVariables": {"fontSize": "14px", "mainBkg": "#21262d", "nodeBorder": "#4493f8"}}}%%
 flowchart LR
+    classDef default rx:8,ry:8,stroke-width:0.75px
     HA["Home Assistant<br/>Backup platform"] -- writes .tar/.json --> BP["backup_path<br/>(local directory)"]
     BP -. is inside .-> RF["Resilio Sync folder"]
     RF -- peer-to-peer sync --> Peer1["Peer device<br/>(e.g. NAS)"]
