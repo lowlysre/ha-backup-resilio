@@ -37,7 +37,7 @@
 ## Before you start
 
 The Resilio Sync agent must have its WebUI/HTTP API **enabled, network-reachable from Home
-Assistant, and password-protected** — this isn't automatic on every install:
+Assistant, and password-protected**: this isn't automatic on every install:
 
 - Linux and NAS builds expose it by default; Windows/macOS desktop apps usually need it turned
   on explicitly (`webui.listen`) since they don't run as a service.
@@ -64,7 +64,7 @@ Assistant, and password-protected** — this isn't automatic on every install:
 
 ## Documentation
 
-- **[Usage](docs/usage.md)** — what setup gives you, use cases, entities, data updates, automation examples, options, and the `prune_backups` service.
-- **[How it works](docs/how-it-works.md)** — the on-disk backup format, how this integration talks to Resilio's undocumented API, and the standalone CLIs.
-- **[Troubleshooting](docs/troubleshooting.md)** — known limitations, common setup errors, and removing the integration.
+- **[Usage](docs/usage.md)**: entities, automation examples, and options.
+- **[How it works](docs/how-it-works.md)**: backup format, the Resilio API this integration drives, and the standalone CLIs.
+- **[Troubleshooting](docs/troubleshooting.md)**: known limitations, common setup errors, and removing the integration.
 
