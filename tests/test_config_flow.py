@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.resilio_backup.api import (
@@ -23,6 +24,7 @@ from custom_components.resilio_backup.const import (
     CONF_FOLDER_PATH,
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
+    CONF_SCAN_INTERVAL,
     DOMAIN,
 )
 from tests.common import MOCK_FOLDER, MOCK_USER_INPUT, build_mock_entry
@@ -170,7 +172,7 @@ async def test_config_flow_no_folders(hass, mock_client) -> None:
 
 
 async def test_options_flow_happy_path(hass) -> None:
-    """The options flow stores retention settings."""
+    """The options flow stores retention and polling settings."""
     entry = build_mock_entry(hass)
     entry.add_to_hass(hass)
 
@@ -181,6 +183,7 @@ async def test_options_flow_happy_path(hass) -> None:
             {
                 CONF_MAX_BACKUPS: 3,
                 CONF_PRUNE_ENABLED: False,
+                CONF_SCAN_INTERVAL: 120,
             },
         )
         await hass.async_block_till_done()
@@ -189,6 +192,7 @@ async def test_options_flow_happy_path(hass) -> None:
     assert entry.options == {
         CONF_MAX_BACKUPS: 3,
         CONF_PRUNE_ENABLED: False,
+        CONF_SCAN_INTERVAL: 120,
     }
     schedule_reload.assert_called_once_with(entry.entry_id)
 
@@ -196,6 +200,51 @@ async def test_options_flow_happy_path(hass) -> None:
 def test_is_matching_returns_false() -> None:
     """The flow never deduplicates against another in-progress flow."""
     assert ResilioBackupConfigFlow().is_matching(ResilioBackupConfigFlow()) is False
+
+
+async def test_reauth_flow_happy_path(hass, mock_client) -> None:
+    """A successful reauth updates stored credentials and reloads the entry."""
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_USERNAME: "admin", CONF_PASSWORD: "new-secret"},
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data[CONF_PASSWORD] == "new-secret"
+    schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+@pytest.mark.parametrize(
+    ("side_effect", "expected_error"),
+    [
+        (ResilioAuthError("bad auth"), "invalid_auth"),
+        (ResilioConnectionError("down"), "cannot_connect"),
+    ],
+)
+async def test_reauth_flow_errors(hass, mock_client, side_effect, expected_error) -> None:
+    """Rejected or unreachable credentials surface as reauth step errors."""
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+    mock_client.get_os.side_effect = side_effect
+
+    result = await entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_USERNAME: "admin", CONF_PASSWORD: "wrong"},
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": expected_error}
 
 
 @pytest.mark.parametrize(

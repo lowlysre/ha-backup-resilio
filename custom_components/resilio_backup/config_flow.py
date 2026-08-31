@@ -35,14 +35,17 @@ from .const import (
     CONF_FOLDER_PATH,
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
+    CONF_SCAN_INTERVAL,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
     DEFAULT_PRUNE_ENABLED,
+    DEFAULT_SCAN_INTERVAL,
     DEFAULT_USE_SSL,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
+    MIN_SCAN_INTERVAL,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -348,6 +351,62 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
         )
 
+    @override
+    async def async_step_reauth(
+        self, _entry_data: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Handle re-authentication triggered by rejected credentials."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Collect fresh credentials for an entry that failed authentication."""
+        errors: dict[str, str] = {}
+        reauth_entry = self._get_reauth_entry()
+
+        if user_input is not None:
+            client = ResilioApiClient(
+                self.hass,
+                reauth_entry.data[CONF_HOST],
+                reauth_entry.data[CONF_PORT],
+                user_input[CONF_USERNAME],
+                user_input[CONF_PASSWORD],
+                reauth_entry.data[CONF_USE_SSL],
+                reauth_entry.data[CONF_VERIFY_SSL],
+            )
+            try:
+                await client.async_get_os()
+            except ResilioAuthError:
+                errors["base"] = "invalid_auth"
+            except ResilioConnectionError:
+                errors["base"] = "cannot_connect"
+            # pylint: disable=broad-exception-caught
+            except Exception:  # noqa: BLE001
+                LOGGER.exception("Unexpected exception while reauthenticating with Resilio")
+                errors["base"] = "unknown"
+            else:
+                return self.async_update_reload_and_abort(
+                    reauth_entry,
+                    data={**reauth_entry.data, **user_input},
+                )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_USERNAME, default=reauth_entry.data[CONF_USERNAME]
+                    ): str,
+                    vol.Required(CONF_PASSWORD): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                    ),
+                }
+            ),
+            description_placeholders={"host": reauth_entry.data[CONF_HOST]},
+            errors=errors,
+        )
+
 
 class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):
     """Options flow for Resilio Backup."""
@@ -358,6 +417,7 @@ class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):
         """Manage integration options."""
         if user_input is not None:
             user_input[CONF_MAX_BACKUPS] = int(user_input[CONF_MAX_BACKUPS])
+            user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
@@ -382,6 +442,19 @@ class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):
                             CONF_PRUNE_ENABLED, DEFAULT_PRUNE_ENABLED
                         ),
                     ): bool,
+                    vol.Required(
+                        CONF_SCAN_INTERVAL,
+                        default=self.config_entry.options.get(
+                            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+                        ),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=MIN_SCAN_INTERVAL,
+                            mode=NumberSelectorMode.BOX,
+                            step=1,
+                            unit_of_measurement="seconds",
+                        )
+                    ),
                 }
             ),
         )

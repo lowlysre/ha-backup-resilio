@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warns (without blocking) when the entered backup path doesn't match the
   selected Resilio folder's own path, and posts a peer-invite link (with a
   QR code) as a persistent notification once the entry is created.
+- `scan_interval` option to configure how often the coordinator polls the Resilio Sync API (default 60s, minimum 10s).
+- Reauth flow: rejected credentials now prompt for a password update instead of leaving entities unavailable.
 
 ## [0.1.0] - 2026-08-30
 

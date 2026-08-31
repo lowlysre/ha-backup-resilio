@@ -32,6 +32,14 @@
         "description": "Enter the path for the new Resilio folder.",
         "title": "Create a new folder"
       },
+      "reauth_confirm": {
+        "data": {
+          "password": "Password",
+          "username": "Username"
+        },
+        "description": "The credentials for {host} were rejected. Enter valid Resilio credentials to reconnect.",
+        "title": "Reauthenticate with Resilio Sync"
+      },
       "user": {
         "data": {
           "host": "Host",
@@ -82,7 +90,11 @@
       "init": {
         "data": {
           "max_backups": "Maximum backups",
-          "prune_enabled": "Enable pruning"
+          "prune_enabled": "Enable pruning",
+          "scan_interval": "Polling interval"
+        },
+        "data_description": {
+          "scan_interval": "How often, in seconds, to poll the Resilio Sync API for folder status."
         },
         "title": "Resilio Backup options"
       }

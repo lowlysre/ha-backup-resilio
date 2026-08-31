@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -18,9 +19,10 @@ from .api import (
 )
 from .const import (
     CONF_FOLDER_ID,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     EVENT_FILE_COUNT_CHANGED,
     EVENT_PEER_COUNT_CHANGED,
-    SCAN_INTERVAL,
 )
 from .folder_state import derive_sync_state, safe_int
 
@@ -56,12 +58,13 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
         client: ResilioApiClient,
     ) -> None:
         """Initialize the coordinator."""
+        scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         super().__init__(
             hass,
             LOGGER,
             config_entry=entry,
             name="Resilio Backup",
-            update_interval=SCAN_INTERVAL,
+            update_interval=timedelta(seconds=scan_interval),
             always_update=False,
         )
         self._entry = entry
@@ -71,9 +74,10 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
         """Fetch the latest folder status."""
         try:
             folder = await self._client.async_get_folder(self._entry.data[CONF_FOLDER_ID])
+        except ResilioAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
         except (
             ResilioConnectionError,
-            ResilioAuthError,
             ResilioFolderNotFoundError,
         ) as err:
             raise UpdateFailed(str(err)) from err
