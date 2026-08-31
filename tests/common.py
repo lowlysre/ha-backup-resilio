@@ -41,7 +41,11 @@ MOCK_FOLDER = {
     "size": 2048,
     "files": 16,
     "peers": 3,
-    "state": "in sync",
+    "paused": False,
+    "error": 0,
+    "errors": [],
+    "down_status": 100,
+    "up_status": 100,
 }
 
 MOCK_OS = {"os": "windows", "version": "3.0"}

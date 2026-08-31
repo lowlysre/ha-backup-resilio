@@ -84,6 +84,34 @@ def test_safe_int(value, default, expected) -> None:
 
 
 @pytest.mark.parametrize(
+    ("overrides", "expected_state"),
+    [
+        ({}, "in_sync"),
+        ({"error": 13}, "error"),
+        ({"errors": [{"error": 13, "path": "/capture"}]}, "error"),
+        ({"paused": True}, "paused"),
+        ({"down_status": 40}, "syncing"),
+        ({"up_status": 80}, "syncing"),
+    ],
+)
+async def test_coordinator_derives_sync_state(hass, overrides, expected_state) -> None:
+    """`state` is derived from real folder fields, not a nonexistent `state` key.
+
+    A live capture of the `/gui/` folder object (tests/fixtures/resilio_gui/,
+    see lowlysre/ha-backup-resilio#9) confirmed there's no `state` string:
+    `error`/`errors`, `paused`, and `down_status`/`up_status` carry it instead.
+    """
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = {**MOCK_FOLDER, **overrides}
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    data = await coordinator.async_test_update()
+
+    assert data.state == expected_state
+
+
+@pytest.mark.parametrize(
     "exception",
     [
         ResilioConnectionError("down"),

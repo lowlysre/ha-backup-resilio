@@ -20,25 +20,14 @@ from .const import (
     EVENT_PEER_COUNT_CHANGED,
     SCAN_INTERVAL,
 )
+from .folder_state import derive_sync_state, safe_int
 
 LOGGER = logging.getLogger(__name__)
 
-
-def _safe_int(value: object, default: int = 0) -> int:
-    """Coerce a Resilio field to an int, tolerating shapes the WebUI API doesn't document.
-
-    The `/gui/` action API isn't documented, so a field observed as a scalar in one
-    Resilio version can turn out to be a list (e.g. `peers` listing peer objects
-    instead of a count) in another. Falling back to `len()` for list/tuple values,
-    and to `default` for anything else that doesn't cleanly convert, keeps a single
-    unexpected shape from crashing the whole coordinator refresh.
-    """
-    if isinstance(value, (list, tuple)):
-        return len(value)
-    try:
-        return int(value)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return default
+# Kept as a module-level alias: tests and any external callers already import
+# `_safe_int` from here, and the real implementation now lives in
+# `folder_state.py` so it can be imported without Home Assistant installed.
+_safe_int = safe_int
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -97,7 +86,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             size=_safe_int(folder.get("size")),
             files=_safe_int(folder.get("files")),
             peers=_safe_int(folder.get("peers")),
-            state=str(folder.get("state", "unknown")).lower().replace(" ", "_"),
+            state=derive_sync_state(folder),
         )
         self._fire_change_events(status)
         return status
