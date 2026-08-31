@@ -97,7 +97,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             size=_safe_int(folder.get("size")),
             files=_safe_int(folder.get("files")),
             peers=_safe_int(folder.get("peers")),
-            state=str(folder.get("state", "unknown")).lower(),
+            state=str(folder.get("state", "unknown")).lower().replace(" ", "_"),
         )
         self._fire_change_events(status)
         return status

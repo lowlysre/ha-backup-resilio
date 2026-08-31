@@ -47,7 +47,7 @@ async def test_coordinator_success(hass) -> None:
     assert data.size == 2048
     assert data.files == 16
     assert data.peers == 3
-    assert data.state == "in sync"
+    assert data.state == "in_sync"
 
 
 async def test_coordinator_peers_as_list(hass) -> None:
