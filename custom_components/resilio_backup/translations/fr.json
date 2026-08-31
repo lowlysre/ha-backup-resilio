@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Chemin de sauvegarde"
         },
-        "description": "Il s'agit du chemin local dans lequel Home Assistant écrit les fichiers `.tar`/`.json` de chaque sauvegarde. Resilio réplique ensuite tout ce qu'il trouve dans son propre dossier vers vos autres appareils. Ce chemin doit donc normalement être le chemin propre du dossier Resilio (pré-rempli ci-dessous) ou un emplacement à l'intérieur de celui-ci.",
+        "description": "Il s'agit du chemin local dans lequel Home Assistant écrit les fichiers `.tar`/`.json` de chaque sauvegarde. Resilio réplique ensuite tout ce qu'il trouve dans son propre dossier vers vos autres appareils. Ce chemin doit donc normalement être le chemin propre du dossier Resilio (pré-rempli ci-dessous) ou un emplacement à l'intérieur de celui-ci.\n\nDossier sélectionné : **{folder_name}** ({folder_path})",
         "title": "Choisir le chemin de sauvegarde"
       },
       "folder": {

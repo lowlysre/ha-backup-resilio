@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Backup-Pfad"
         },
-        "description": "Dies ist der lokale Pfad, in den Home Assistant die `.tar`/`.json`-Dateien jedes Backups schreibt. Resilio repliziert dann alles, was sich in seinem eigenen Ordner befindet, auf deine anderen Geräte. Dieser Pfad sollte daher normalerweise der eigene Pfad des Resilio-Ordners sein (unten vorausgefüllt) oder sich innerhalb davon befinden.",
+        "description": "Dies ist der lokale Pfad, in den Home Assistant die `.tar`/`.json`-Dateien jedes Backups schreibt. Resilio repliziert dann alles, was sich in seinem eigenen Ordner befindet, auf deine anderen Geräte. Dieser Pfad sollte daher normalerweise der eigene Pfad des Resilio-Ordners sein (unten vorausgefüllt) oder sich innerhalb davon befinden.\n\nAusgewählter Ordner: **{folder_name}** ({folder_path})",
         "title": "Backup-Pfad wählen"
       },
       "folder": {

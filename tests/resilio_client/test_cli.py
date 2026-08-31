@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from resilio_client import cli
-from resilio_client.client import ResilioApiError
+from custom_components.resilio_backup.resilio_client import cli
+from custom_components.resilio_backup.resilio_client.client import ResilioApiError
 
 CONNECTION_ARGS = [
     "--host", "resilio.local",

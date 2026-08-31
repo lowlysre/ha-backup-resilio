@@ -37,10 +37,10 @@ jobs:
         pip install -r requirements_tests.txt
     - name: Lint with flake8
       run: |
-        python -m flake8 custom_components/resilio_backup/ resilio_client/ tests/
+        python -m flake8 custom_components/resilio_backup/ tests/
     - name: Lint with pylint
       run: |
-        python -m pylint --rcfile=pyproject.toml custom_components/resilio_backup/ resilio_client/ tests/
+        python -m pylint --rcfile=pyproject.toml custom_components/resilio_backup/ tests/
     - name: Test with pytest
       run: |
         python -m pytest --cov --cov-report term-missing --cov-config=pyproject.toml

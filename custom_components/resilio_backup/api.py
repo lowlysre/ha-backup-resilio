@@ -5,13 +5,19 @@ no dependency on Home Assistant, so it can be exercised directly (or via the
 ``resilio-client`` CLI) against a live Resilio Sync agent without a full HA
 install. This module only adds the one HA-specific piece: sourcing an
 ``aiohttp.ClientSession`` from HA's shared connection pool.
+
+``resilio_client`` is a subpackage of ``custom_components.resilio_backup``
+(rather than a standalone top-level package) so this folder stays
+self-contained: Home Assistant only ever loads
+``custom_components/resilio_backup`` (e.g. via HACS or a manual copy), and
+never sees anything outside it.
 """
 
 from __future__ import annotations
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from resilio_client.client import (
+from .resilio_client.client import (
     ResilioApiError,
     ResilioAuthError,
     ResilioClient,

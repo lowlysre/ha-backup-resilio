@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from resilio_backup_store import cli
+from custom_components.resilio_backup.resilio_backup_store import cli
 
 
 def test_requires_command() -> None:

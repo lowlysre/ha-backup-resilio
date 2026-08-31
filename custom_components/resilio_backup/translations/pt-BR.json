@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Caminho do backup"
         },
-        "description": "Este é o caminho local no qual o Home Assistant grava os arquivos `.tar`/`.json` de cada backup. O Resilio então replica tudo o que encontra dentro de sua própria pasta para seus outros dispositivos, então este caminho normalmente deve ser o caminho próprio da pasta do Resilio (pré-preenchido abaixo) ou um local dentro dela.",
+        "description": "Este é o caminho local no qual o Home Assistant grava os arquivos `.tar`/`.json` de cada backup. O Resilio então replica tudo o que encontra dentro de sua própria pasta para seus outros dispositivos, então este caminho normalmente deve ser o caminho próprio da pasta do Resilio (pré-preenchido abaixo) ou um local dentro dela.\n\nPasta selecionada: **{folder_name}** ({folder_path})",
         "title": "Escolher caminho do backup"
       },
       "folder": {

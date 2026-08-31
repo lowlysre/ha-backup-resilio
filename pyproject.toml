@@ -29,10 +29,17 @@ test = [
 
 [tool.setuptools]
 include-package-data = true
+packages = [
+  "custom_components.resilio_backup",
+  "custom_components.resilio_backup.resilio_client",
+  "custom_components.resilio_backup.resilio_backup_store",
+  "resilio_client",
+  "resilio_backup_store",
+]
 
-[tool.setuptools.packages.find]
-include = ["custom_components*", "resilio_client*", "resilio_backup_store*"]
-namespaces = true
+[tool.setuptools.package-dir]
+resilio_client = "custom_components/resilio_backup/resilio_client"
+resilio_backup_store = "custom_components/resilio_backup/resilio_backup_store"
 
 [tool.setuptools.package-data]
 "custom_components.resilio_backup" = ["*.json", "*.yaml", "translations/*.json", "brand/*.png"]

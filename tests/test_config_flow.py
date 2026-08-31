@@ -55,6 +55,10 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
         result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
     )
     assert result["step_id"] == "backup_path"
+    assert result["description_placeholders"] == {
+        "folder_name": MOCK_FOLDER["name"],
+        "folder_path": MOCK_FOLDER["path"],
+    }
 
     # A path outside the Resilio folder warns instead of blocking...
     result = await hass.config_entries.flow.async_configure(
@@ -116,6 +120,28 @@ async def test_config_flow_cannot_connect(hass, mock_client) -> None:
         result["flow_id"], MOCK_USER_INPUT
     )
     assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_config_flow_strips_url_scheme_from_host(hass, mock_client) -> None:
+    """A pasted URL in the host field is tolerated, not rejected."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**MOCK_USER_INPUT, "host": "http://192.168.86.155/"}
+    )
+    assert result["step_id"] == "folder"
+    mock_client.get_os.assert_awaited_once()
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BACKUP_PATH: MOCK_FOLDER["path"]}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"]["host"] == "192.168.86.155"
 
 
 async def test_config_flow_invalid_auth(hass, mock_client) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import re
 from typing import Any, Self, override
 
 import qrcode
@@ -71,6 +72,19 @@ CONF_NEW_FOLDER_PATH = "new_folder_path"
 CREATE_NEW_VALUE = "__create_new__"
 
 
+def _strip_url_scheme(host: str) -> str:
+    """Tolerate a full URL pasted into the host field instead of a bare host.
+
+    ``ResilioClient`` builds its own ``scheme://host:port`` base URL, so a
+    host like ``http://192.168.1.5/`` would otherwise double up into
+    ``http://http://192.168.1.5/:8888/gui``. Strip a leading scheme and any
+    trailing path/slash so users can paste the WebUI's own address as-is.
+    """
+    host = host.strip()
+    host = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", host)
+    return host.split("/", 1)[0]
+
+
 class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Resilio Backup."""
 
@@ -102,6 +116,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any]
     ) -> dict[str, str]:
         """Test a connection with the given input, returning any form errors."""
+        user_input[CONF_HOST] = _strip_url_scheme(user_input[CONF_HOST])
         client = ResilioApiClient(
             self.hass,
             user_input[CONF_HOST],
@@ -339,6 +354,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Choose where backups are staged before syncing to the folder."""
         errors: dict[str, str] = {}
         folder_path = str(self._folder.get("path", ""))
+        folder_name = str(self._folder.get("name") or folder_path or self._folder.get("id", ""))
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
@@ -377,6 +393,10 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+            description_placeholders={
+                "folder_name": folder_name,
+                "folder_path": folder_path or "unknown",
+            },
         )
 
     async def _async_notify_peer_invite(self) -> None:
