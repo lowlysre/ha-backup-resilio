@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Home Assistant custom integration for Resilio as a Backup target"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = []
 
 [project.optional-dependencies]
