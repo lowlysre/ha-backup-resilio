@@ -1,0 +1,147 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Ce point de terminaison Resilio est déjà configuré.",
+      "reauth_successful": "La réauthentification a réussi.",
+      "reconfigure_successful": "La reconfiguration a réussi."
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion à l'API Resilio.",
+      "invalid_auth": "Les identifiants Resilio ont été rejetés.",
+      "no_folders": "Aucun dossier Resilio n'est encore disponible. Choisissez \"Créer un nouveau dossier\" pour continuer.",
+      "path_mismatch": "Ce chemin ne correspond pas au chemin propre du dossier Resilio, donc les sauvegardes écrites ici ne seront pas répliquées vers les pairs. Soumettez à nouveau pour l'utiliser quand même.",
+      "unknown": "Erreur inattendue."
+    },
+    "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Chemin de sauvegarde"
+        },
+        "description": "Il s'agit du chemin local dans lequel Home Assistant écrit les fichiers `.tar`/`.json` de chaque sauvegarde. Resilio réplique ensuite tout ce qu'il trouve dans son propre dossier vers vos autres appareils. Ce chemin doit donc normalement être le chemin propre du dossier Resilio (pré-rempli ci-dessous) ou un emplacement à l'intérieur de celui-ci.",
+        "title": "Choisir le chemin de sauvegarde"
+      },
+      "folder": {
+        "data": {
+          "folder_choice": "Dossier Resilio"
+        },
+        "description": "Il s'agit du dossier Resilio Sync qui réplique réellement vos sauvegardes vers d'autres appareils. Choisissez-en un existant, ou choisissez \"Créer un nouveau dossier\" pour en ajouter un.",
+        "title": "Choisir le dossier de sauvegarde"
+      },
+      "new_folder": {
+        "data": {
+          "new_folder_path": "Chemin du nouveau dossier"
+        },
+        "description": "Entrez le chemin du nouveau dossier Resilio.",
+        "title": "Créer un nouveau dossier"
+      },
+      "reauth_confirm": {
+        "data": {
+          "host": "Hôte",
+          "password": "Mot de passe",
+          "port": "Port",
+          "use_ssl": "Utiliser SSL",
+          "username": "Nom d'utilisateur",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "description": "Resilio a rejeté les identifiants actuels. Entrez les détails de connexion mis à jour.",
+        "title": "Se réauthentifier auprès de Resilio Sync"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Hôte",
+          "password": "Mot de passe",
+          "port": "Port",
+          "use_ssl": "Utiliser SSL",
+          "username": "Nom d'utilisateur",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "description": "Mettez à jour les détails de connexion pour ce point de terminaison Resilio Sync.",
+        "title": "Reconfigurer Resilio Sync"
+      },
+      "user": {
+        "data": {
+          "host": "Hôte",
+          "password": "Mot de passe",
+          "port": "Port",
+          "use_ssl": "Utiliser SSL",
+          "username": "Nom d'utilisateur",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "description": "Connecter Home Assistant à l'API locale de Resilio Sync.",
+        "title": "Se connecter à Resilio Sync"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Connectivité"
+      }
+    },
+    "sensor": {
+      "file_count": {
+        "name": "Nombre de fichiers"
+      },
+      "folder_size": {
+        "name": "Taille du dossier"
+      },
+      "last_updated": {
+        "name": "Dernière mise à jour"
+      },
+      "peer_count_connected": {
+        "name": "Pairs connectés"
+      },
+      "peer_count_total": {
+        "name": "Pairs configurés"
+      },
+      "sync_state": {
+        "name": "État de synchronisation",
+        "state": {
+          "error": "Erreur",
+          "in_sync": "Synchronisé",
+          "paused": "En pause",
+          "syncing": "Synchronisation en cours",
+          "unknown": "Inconnu"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "max_backups": "Nombre maximal de sauvegardes",
+          "prune_enabled": "Activer le nettoyage",
+          "scan_interval": "Intervalle d'interrogation"
+        },
+        "data_description": {
+          "scan_interval": "Fréquence, en secondes, d'interrogation de l'API Resilio Sync pour l'état du dossier."
+        },
+        "title": "Options de Resilio Backup"
+      }
+    }
+  },
+  "services": {
+    "prune_backups": {
+      "description": "Supprime les sauvegardes au-delà de la limite de rétention configurée pour chaque entrée Resilio Backup chargée.",
+      "name": "Nettoyer les sauvegardes"
+    }
+  },
+  "exceptions": {
+    "backup_not_found": {
+      "message": "Sauvegarde {backup_id} introuvable."
+    },
+    "delete_backup_failed": {
+      "message": "Échec de la suppression de la sauvegarde {backup_id}."
+    },
+    "upload_backup_failed": {
+      "message": "Échec du stockage de la sauvegarde {backup_id}."
+    }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "Le dossier Resilio n'existe plus",
+      "description": "Le dossier Resilio configuré pour cette entrée (`{folder_id}`) n'est plus présent sur le serveur Resilio Sync. Recréez le dossier avec le même identifiant côté Resilio, ou supprimez puis réajoutez cette intégration pour choisir un autre dossier."
+    }
+  }
+}
