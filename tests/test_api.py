@@ -16,13 +16,13 @@ from resilio_client.client import ResilioClient
 from tests.common import MOCK_USER_INPUT
 
 
-def test_resilio_api_client_is_a_resilio_client(hass) -> None:
+async def test_resilio_api_client_is_a_resilio_client(hass) -> None:
     """ResilioApiClient is usable everywhere a core ResilioClient is."""
     client = ResilioApiClient(hass, **MOCK_USER_INPUT)
     assert isinstance(client, ResilioClient)
 
 
-def test_resilio_api_client_uses_hass_session(hass) -> None:
+async def test_resilio_api_client_uses_hass_session(hass) -> None:
     """The wrapper sources its aiohttp session from Home Assistant's shared pool."""
     # pylint: disable=protected-access
     client = ResilioApiClient(hass, **MOCK_USER_INPUT)
