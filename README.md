@@ -4,7 +4,7 @@
 [![HACS](https://github.com/lowlysre/ha-backup-resilio/actions/workflows/hacs.yml/badge.svg)](https://github.com/lowlysre/ha-backup-resilio/actions/workflows/hacs.yml)
 [![Hassfest](https://github.com/lowlysre/ha-backup-resilio/actions/workflows/hassfest.yml/badge.svg)](https://github.com/lowlysre/ha-backup-resilio/actions/workflows/hassfest.yml)
 [![Coverage](https://coveralls.io/repos/github/lowlysre/ha-backup-resilio/badge.svg?branch=main)](https://coveralls.io/github/lowlysre/ha-backup-resilio?branch=main)
-[![Quality Scale: Gold](https://img.shields.io/badge/quality%20scale-gold_%F0%9F%8F%86-b08d57)](custom_components/resilio_backup/quality_scale.yaml)
+[![Quality Scale: Gold](https://img.shields.io/badge/quality%20scale-%F0%9F%8F%86-b08d57)](custom_components/resilio_backup/quality_scale.yaml)
 
 `resilio_backup` exposes a [Resilio Sync](https://www.resilio.com/individuals/) managed folder as a Home Assistant backup location. Home Assistant writes the local backup files, Resilio Sync replicates them to peers, and the integration reports sync health back into Home Assistant.
 
