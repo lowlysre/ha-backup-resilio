@@ -1,0 +1,147 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Este endpoint de Resilio ya está configurado.",
+      "reauth_successful": "La reautenticación se realizó correctamente.",
+      "reconfigure_successful": "La reconfiguración se realizó correctamente."
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar a la API de Resilio.",
+      "invalid_auth": "Las credenciales de Resilio fueron rechazadas.",
+      "no_folders": "Todavía no hay carpetas de Resilio disponibles. Elige \"Crear una nueva carpeta\" para continuar.",
+      "path_mismatch": "Esta ruta no coincide con la ruta propia de la carpeta de Resilio, por lo que las copias de seguridad escritas aquí no se replicarán a los pares. Envía de nuevo para usarla de todos modos.",
+      "unknown": "Error inesperado."
+    },
+    "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Ruta de copia de seguridad"
+        },
+        "description": "Esta es la ruta local en la que Home Assistant escribe los archivos `.tar`/`.json` de cada copia de seguridad. Resilio luego replica todo lo que encuentra dentro de su propia carpeta a tus otros dispositivos, por lo que esta ruta normalmente debería ser la ruta propia de la carpeta de Resilio (rellenada previamente abajo) o una ubicación dentro de ella.",
+        "title": "Elegir ruta de copia de seguridad"
+      },
+      "folder": {
+        "data": {
+          "folder_choice": "Carpeta de Resilio"
+        },
+        "description": "Esta es la carpeta de Resilio Sync que realmente replica tus copias de seguridad a otros dispositivos. Elige una existente, o elige \"Crear una nueva carpeta\" para añadir una.",
+        "title": "Elegir carpeta de copia de seguridad"
+      },
+      "new_folder": {
+        "data": {
+          "new_folder_path": "Ruta de la nueva carpeta"
+        },
+        "description": "Introduce la ruta para la nueva carpeta de Resilio.",
+        "title": "Crear una nueva carpeta"
+      },
+      "reauth_confirm": {
+        "data": {
+          "host": "Host",
+          "password": "Contraseña",
+          "port": "Puerto",
+          "use_ssl": "Usar SSL",
+          "username": "Usuario",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "Resilio rechazó las credenciales actuales. Introduce los detalles de conexión actualizados.",
+        "title": "Reautenticar con Resilio Sync"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "password": "Contraseña",
+          "port": "Puerto",
+          "use_ssl": "Usar SSL",
+          "username": "Usuario",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "Actualiza los detalles de conexión para este endpoint de Resilio Sync.",
+        "title": "Reconfigurar Resilio Sync"
+      },
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Contraseña",
+          "port": "Puerto",
+          "use_ssl": "Usar SSL",
+          "username": "Usuario",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "Conectar Home Assistant a la API local de Resilio Sync.",
+        "title": "Conectar con Resilio Sync"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Conectividad"
+      }
+    },
+    "sensor": {
+      "file_count": {
+        "name": "Número de archivos"
+      },
+      "folder_size": {
+        "name": "Tamaño de la carpeta"
+      },
+      "last_updated": {
+        "name": "Última actualización"
+      },
+      "peer_count_connected": {
+        "name": "Pares conectados"
+      },
+      "peer_count_total": {
+        "name": "Pares configurados"
+      },
+      "sync_state": {
+        "name": "Estado de sincronización",
+        "state": {
+          "error": "Error",
+          "in_sync": "Sincronizado",
+          "paused": "Pausado",
+          "syncing": "Sincronizando",
+          "unknown": "Desconocido"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "max_backups": "Máximo de copias de seguridad",
+          "prune_enabled": "Habilitar limpieza",
+          "scan_interval": "Intervalo de consulta"
+        },
+        "data_description": {
+          "scan_interval": "Con qué frecuencia, en segundos, se consulta la API de Resilio Sync para conocer el estado de la carpeta."
+        },
+        "title": "Opciones de Resilio Backup"
+      }
+    }
+  },
+  "services": {
+    "prune_backups": {
+      "description": "Elimina las copias de seguridad que superen el límite de retención configurado para cada entrada de Resilio Backup cargada.",
+      "name": "Limpiar copias de seguridad"
+    }
+  },
+  "exceptions": {
+    "backup_not_found": {
+      "message": "No se encontró la copia de seguridad {backup_id}."
+    },
+    "delete_backup_failed": {
+      "message": "No se pudo eliminar la copia de seguridad {backup_id}."
+    },
+    "upload_backup_failed": {
+      "message": "No se pudo guardar la copia de seguridad {backup_id}."
+    }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "La carpeta de Resilio ya no existe",
+      "description": "La carpeta de Resilio configurada para esta entrada (`{folder_id}`) ya no está presente en el servidor de Resilio Sync. Vuelve a crear la carpeta con el mismo ID en el lado de Resilio, o elimina y vuelve a añadir esta integración para seleccionar una carpeta diferente."
+    }
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Este endpoint do Resilio já está configurado.",
+      "reauth_successful": "Reautenticação bem-sucedida.",
+      "reconfigure_successful": "Reconfiguração bem-sucedida."
+    },
+    "error": {
+      "cannot_connect": "Falha ao conectar à API do Resilio.",
+      "invalid_auth": "As credenciais do Resilio foram rejeitadas.",
+      "no_folders": "Ainda não há pastas do Resilio disponíveis. Escolha \"Criar uma nova pasta\" para continuar.",
+      "path_mismatch": "Este caminho não corresponde ao caminho próprio da pasta do Resilio, então os backups gravados aqui não serão replicados para os pares. Envie novamente para usá-lo mesmo assim.",
+      "unknown": "Erro inesperado."
+    },
+    "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Caminho do backup"
+        },
+        "description": "Este é o caminho local no qual o Home Assistant grava os arquivos `.tar`/`.json` de cada backup. O Resilio então replica tudo o que encontra dentro de sua própria pasta para seus outros dispositivos, então este caminho normalmente deve ser o caminho próprio da pasta do Resilio (pré-preenchido abaixo) ou um local dentro dela.",
+        "title": "Escolher caminho do backup"
+      },
+      "folder": {
+        "data": {
+          "folder_choice": "Pasta do Resilio"
+        },
+        "description": "Esta é a pasta do Resilio Sync que realmente replica seus backups para outros dispositivos. Escolha uma existente, ou escolha \"Criar uma nova pasta\" para adicionar uma.",
+        "title": "Escolher pasta de backup"
+      },
+      "new_folder": {
+        "data": {
+          "new_folder_path": "Caminho da nova pasta"
+        },
+        "description": "Digite o caminho para a nova pasta do Resilio.",
+        "title": "Criar uma nova pasta"
+      },
+      "reauth_confirm": {
+        "data": {
+          "host": "Host",
+          "password": "Senha",
+          "port": "Porta",
+          "use_ssl": "Usar SSL",
+          "username": "Usuário",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "O Resilio rejeitou as credenciais atuais. Digite os detalhes de conexão atualizados.",
+        "title": "Reautenticar com o Resilio Sync"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "password": "Senha",
+          "port": "Porta",
+          "use_ssl": "Usar SSL",
+          "username": "Usuário",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "Atualize os detalhes de conexão para este endpoint do Resilio Sync.",
+        "title": "Reconfigurar o Resilio Sync"
+      },
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Senha",
+          "port": "Porta",
+          "use_ssl": "Usar SSL",
+          "username": "Usuário",
+          "verify_ssl": "Verificar certificado SSL"
+        },
+        "description": "Conectar o Home Assistant à API local do Resilio Sync.",
+        "title": "Conectar ao Resilio Sync"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Conectividade"
+      }
+    },
+    "sensor": {
+      "file_count": {
+        "name": "Número de arquivos"
+      },
+      "folder_size": {
+        "name": "Tamanho da pasta"
+      },
+      "last_updated": {
+        "name": "Última atualização"
+      },
+      "peer_count_connected": {
+        "name": "Pares conectados"
+      },
+      "peer_count_total": {
+        "name": "Pares configurados"
+      },
+      "sync_state": {
+        "name": "Estado de sincronização",
+        "state": {
+          "error": "Erro",
+          "in_sync": "Sincronizado",
+          "paused": "Pausado",
+          "syncing": "Sincronizando",
+          "unknown": "Desconhecido"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "max_backups": "Máximo de backups",
+          "prune_enabled": "Ativar limpeza",
+          "scan_interval": "Intervalo de consulta"
+        },
+        "data_description": {
+          "scan_interval": "Com que frequência, em segundos, a API do Resilio Sync é consultada para o status da pasta."
+        },
+        "title": "Opções do Resilio Backup"
+      }
+    }
+  },
+  "services": {
+    "prune_backups": {
+      "description": "Exclui backups além do limite de retenção configurado para cada entrada do Resilio Backup carregada.",
+      "name": "Limpar backups"
+    }
+  },
+  "exceptions": {
+    "backup_not_found": {
+      "message": "Backup {backup_id} não encontrado."
+    },
+    "delete_backup_failed": {
+      "message": "Falha ao excluir o backup {backup_id}."
+    },
+    "upload_backup_failed": {
+      "message": "Falha ao armazenar o backup {backup_id}."
+    }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "A pasta do Resilio não existe mais",
+      "description": "A pasta do Resilio configurada para esta entrada (`{folder_id}`) não está mais presente no servidor do Resilio Sync. Recrie a pasta com o mesmo ID no lado do Resilio, ou remova e adicione novamente esta integração para selecionar uma pasta diferente."
+    }
+  }
+}
