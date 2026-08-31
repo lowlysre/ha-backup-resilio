@@ -14,15 +14,7 @@ from custom_components.resilio_backup.backup import (
     ResilioBackupAgent,
     _parse_backup_date,
     async_get_backup_agents,
-    async_prune_backups,
     async_register_backup_agents_listener,
-)
-from custom_components.resilio_backup.const import (
-    CONF_MAX_BACKUPS,
-    CONF_PRUNE_ENABLED,
-    DOMAIN,
-    EVENT_BACKUPS_PRUNED,
-    SERVICE_PRUNE_BACKUPS,
 )
 from tests.common import build_agent_backup, build_backup_dir, build_mock_entry, setup_integration
 
@@ -186,120 +178,6 @@ async def test_delete_wraps_filesystem_errors(hass) -> None:
 def test_parse_backup_date_invalid_returns_min() -> None:
     """Invalid dates sort as the oldest possible value."""
     assert _parse_backup_date("not-a-date") == _parse_backup_date("0001-01-01T00:00:00")
-
-
-async def test_pruning_deletes_oldest_first(hass) -> None:
-    """Pruning keeps the newest configured backups."""
-    entry = build_mock_entry(
-        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 0}
-    )
-    agent = ResilioBackupAgent(hass, entry)
-
-    for backup in (
-        build_agent_backup("backup1", date="2026-08-30T23:00:00+00:00"),
-        build_agent_backup("backup2", date="2026-08-30T23:10:00+00:00"),
-        build_agent_backup("backup3", date="2026-08-30T23:20:00+00:00"),
-    ):
-        await agent.async_upload_backup(
-            open_stream=lambda backup_id=backup.backup_id: _open_stream([backup_id.encode()]),
-            backup=backup,
-            on_progress=lambda **kwargs: None,
-        )
-
-    pruning_entry = build_mock_entry(
-        hass,
-        backup_path=entry.data["backup_path"],
-        options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 2},
-    )
-
-    assert await async_prune_backups(hass, pruning_entry) == 1
-    assert sorted(backup.backup_id for backup in await agent.async_list_backups()) == [
-        "backup2",
-        "backup3",
-    ]
-
-
-async def test_pruning_respects_disabled_flag(hass) -> None:
-    """Pruning can be disabled."""
-    entry = build_mock_entry(
-        hass, options={CONF_PRUNE_ENABLED: False, CONF_MAX_BACKUPS: 1}
-    )
-    assert await async_prune_backups(hass, entry) == 0
-
-
-async def test_pruning_respects_unlimited_setting(hass) -> None:
-    """Zero means keep everything."""
-    entry = build_mock_entry(
-        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 0}
-    )
-    assert await async_prune_backups(hass, entry) == 0
-
-
-async def test_pruning_fires_event_when_backups_are_deleted(hass) -> None:
-    """A logbook-visible event fires when pruning deletes backups."""
-    entry = build_mock_entry(
-        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 0}
-    )
-    agent = ResilioBackupAgent(hass, entry)
-    for backup_id in ("backup1", "backup2"):
-        await agent.async_upload_backup(
-            open_stream=lambda backup_id=backup_id: _open_stream([backup_id.encode()]),
-            backup=build_agent_backup(backup_id),
-            on_progress=lambda **kwargs: None,
-        )
-
-    pruning_entry = build_mock_entry(
-        hass,
-        backup_path=entry.data["backup_path"],
-        options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 1},
-    )
-    events: list = []
-    hass.bus.async_listen(EVENT_BACKUPS_PRUNED, events.append)
-
-    assert await async_prune_backups(hass, pruning_entry) == 1
-    await hass.async_block_till_done()
-
-    assert len(events) == 1
-    assert events[0].data == {"entry_id": pruning_entry.entry_id, "deleted": 1}
-
-
-async def test_pruning_no_event_when_nothing_is_deleted(hass) -> None:
-    """No event fires when pruning has nothing to delete."""
-    entry = build_mock_entry(
-        hass, options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 1}
-    )
-    events: list = []
-    hass.bus.async_listen(EVENT_BACKUPS_PRUNED, events.append)
-
-    assert await async_prune_backups(hass, entry) == 0
-    await hass.async_block_till_done()
-
-    assert not events
-
-
-async def test_prune_service_end_to_end(hass, aioclient_mock) -> None:
-    """The prune service applies to loaded entries."""
-    entry = await setup_integration(
-        hass,
-        aioclient_mock,
-        options={CONF_PRUNE_ENABLED: True, CONF_MAX_BACKUPS: 1},
-    )
-    agent = ResilioBackupAgent(hass, entry)
-
-    await agent.async_upload_backup(
-        open_stream=lambda: _open_stream([b"older"]),
-        backup=build_agent_backup("older", date="2026-08-30T22:00:00+00:00"),
-        on_progress=lambda **kwargs: None,
-    )
-    await agent.async_upload_backup(
-        open_stream=lambda: _open_stream([b"newer"]),
-        backup=build_agent_backup("newer", date="2026-08-30T23:00:00+00:00"),
-        on_progress=lambda **kwargs: None,
-    )
-
-    await hass.services.async_call(DOMAIN, SERVICE_PRUNE_BACKUPS, blocking=True)
-
-    assert [backup.backup_id for backup in await agent.async_list_backups()] == ["newer"]
 
 
 async def test_backup_agent_listeners_on_setup_and_unload(hass, aioclient_mock) -> None:

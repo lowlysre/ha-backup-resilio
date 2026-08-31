@@ -2,40 +2,21 @@
 
 from __future__ import annotations
 
-from functools import partial
-
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .api import ResilioApiClient
-from .backup import async_notify_backup_listeners, async_prune_backups
-from .const import (
-    CONF_USE_SSL,
-    CONF_VERIFY_SSL,
-    DOMAIN,
-    SERVICE_PRUNE_BACKUPS,
-)
+from .backup import async_notify_backup_listeners
+from .const import CONF_USE_SSL, CONF_VERIFY_SSL
 from .coordinator import ResilioBackupData, ResilioConfigEntry, ResilioDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
-async def _async_handle_prune_service(hass: HomeAssistant, _call: ServiceCall) -> None:
-    """Handle pruning old backups for all loaded entries."""
-    loaded_entry: ResilioConfigEntry
-    for loaded_entry in hass.config_entries.async_entries(DOMAIN):
-        if loaded_entry.state is ConfigEntryState.LOADED:
-            await async_prune_backups(hass, loaded_entry)
-
-
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up the integration."""
-    hass.services.async_register(
-        DOMAIN, SERVICE_PRUNE_BACKUPS, partial(_async_handle_prune_service, hass)
-    )
     return True
 
 

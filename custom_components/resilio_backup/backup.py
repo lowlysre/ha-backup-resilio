@@ -31,15 +31,7 @@ from homeassistant.core import HomeAssistant, callback
 from .resilio_backup_store import BackupNotFoundError, BackupStore
 from .resilio_backup_store.store import CHUNK_SIZE, parse_backup_date as _parse_backup_date
 
-from .const import (
-    CONF_BACKUP_PATH,
-    CONF_MAX_BACKUPS,
-    CONF_PRUNE_ENABLED,
-    DEFAULT_MAX_BACKUPS,
-    DEFAULT_PRUNE_ENABLED,
-    DOMAIN,
-    EVENT_BACKUPS_PRUNED,
-)
+from .const import CONF_BACKUP_PATH, DOMAIN
 from .coordinator import ResilioConfigEntry
 
 LOGGER = logging.getLogger(__name__)
@@ -50,7 +42,6 @@ __all__ = [
     "_parse_backup_date",
     "async_get_backup_agents",
     "async_notify_backup_listeners",
-    "async_prune_backups",
     "async_register_backup_agents_listener",
 ]
 
@@ -171,7 +162,6 @@ class ResilioBackupAgent(BackupAgent):
                     json.dumps(backup.as_dict()), encoding="utf-8"
                 )
             )
-            await async_prune_backups(self._hass, self._entry)
         except OSError as err:
             if file_handle is not None:
                 await self._hass.async_add_executor_job(file_handle.close)
@@ -230,20 +220,3 @@ class ResilioBackupAgent(BackupAgent):
                 translation_key="delete_backup_failed",
                 translation_placeholders={"backup_id": backup_id},
             ) from err
-
-
-async def async_prune_backups(hass: HomeAssistant, entry: ResilioConfigEntry) -> int:
-    """Prune old backups for one entry."""
-    if not entry.options.get(CONF_PRUNE_ENABLED, DEFAULT_PRUNE_ENABLED):
-        return 0
-
-    max_backups = entry.options.get(CONF_MAX_BACKUPS, DEFAULT_MAX_BACKUPS)
-    store = BackupStore(entry.data[CONF_BACKUP_PATH])
-    deleted = await hass.async_add_executor_job(store.prune_backups, max_backups)
-
-    if deleted:
-        hass.bus.async_fire(
-            EVENT_BACKUPS_PRUNED,
-            {"entry_id": entry.entry_id, "deleted": len(deleted)},
-        )
-    return len(deleted)

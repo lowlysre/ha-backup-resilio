@@ -4,7 +4,12 @@
 # cannot receive an official badge. Target tier: Platinum.
 rules:
   # Bronze
-  action-setup: done
+  action-setup:
+    status: exempt
+    comment: >-
+      The integration no longer registers any custom services; backup
+      retention is handled by Home Assistant core's built-in per-location
+      settings instead.
   appropriate-polling: done
   brands:
     status: done

@@ -110,8 +110,6 @@
     "step": {
       "init": {
         "data": {
-          "max_backups": "Nombre maximal de sauvegardes",
-          "prune_enabled": "Activer le nettoyage",
           "scan_interval": "Intervalle d'interrogation"
         },
         "data_description": {
@@ -119,12 +117,6 @@
         },
         "title": "Options de Resilio Backup"
       }
-    }
-  },
-  "services": {
-    "prune_backups": {
-      "description": "Supprime les sauvegardes au-delà de la limite de rétention configurée pour chaque entrée Resilio Backup chargée.",
-      "name": "Nettoyer les sauvegardes"
     }
   },
   "exceptions": {

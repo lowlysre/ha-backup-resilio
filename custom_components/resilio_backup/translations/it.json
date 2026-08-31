@@ -110,8 +110,6 @@
     "step": {
       "init": {
         "data": {
-          "max_backups": "Numero massimo di backup",
-          "prune_enabled": "Abilita pulizia",
           "scan_interval": "Intervallo di polling"
         },
         "data_description": {
@@ -119,12 +117,6 @@
         },
         "title": "Opzioni di Resilio Backup"
       }
-    }
-  },
-  "services": {
-    "prune_backups": {
-      "description": "Elimina i backup oltre il limite di conservazione configurato per ogni voce Resilio Backup caricata.",
-      "name": "Pulisci backup"
     }
   },
   "exceptions": {

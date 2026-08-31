@@ -110,8 +110,6 @@
     "step": {
       "init": {
         "data": {
-          "max_backups": "Maximum aantal back-ups",
-          "prune_enabled": "Opschonen inschakelen",
           "scan_interval": "Pollinginterval"
         },
         "data_description": {
@@ -119,12 +117,6 @@
         },
         "title": "Resilio Backup-opties"
       }
-    }
-  },
-  "services": {
-    "prune_backups": {
-      "description": "Verwijdert back-ups die de geconfigureerde bewaarlimiet overschrijden voor elke geladen Resilio Backup-vermelding.",
-      "name": "Back-ups opschonen"
     }
   },
   "exceptions": {

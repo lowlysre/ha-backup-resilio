@@ -22,8 +22,6 @@ from custom_components.resilio_backup.const import (
     CONF_BACKUP_PATH,
     CONF_FOLDER_ID,
     CONF_FOLDER_PATH,
-    CONF_MAX_BACKUPS,
-    CONF_PRUNE_ENABLED,
     CONF_SCAN_INTERVAL,
     DOMAIN,
 )
@@ -198,7 +196,7 @@ async def test_config_flow_no_folders(hass, mock_client) -> None:
 
 
 async def test_options_flow_happy_path(hass) -> None:
-    """The options flow stores retention and polling settings."""
+    """The options flow stores the polling interval."""
     entry = build_mock_entry(hass)
     entry.add_to_hass(hass)
 
@@ -207,8 +205,6 @@ async def test_options_flow_happy_path(hass) -> None:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             {
-                CONF_MAX_BACKUPS: 3,
-                CONF_PRUNE_ENABLED: False,
                 CONF_SCAN_INTERVAL: 120,
             },
         )
@@ -216,8 +212,6 @@ async def test_options_flow_happy_path(hass) -> None:
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options == {
-        CONF_MAX_BACKUPS: 3,
-        CONF_PRUNE_ENABLED: False,
         CONF_SCAN_INTERVAL: 120,
     }
     schedule_reload.assert_called_once_with(entry.entry_id)

@@ -110,8 +110,6 @@
     "step": {
       "init": {
         "data": {
-          "max_backups": "Maximum backups",
-          "prune_enabled": "Enable pruning",
           "scan_interval": "Polling interval"
         },
         "data_description": {
@@ -119,12 +117,6 @@
         },
         "title": "Resilio Backup options"
       }
-    }
-  },
-  "services": {
-    "prune_backups": {
-      "description": "Delete backups beyond the configured retention limit for every loaded Resilio Backup entry.",
-      "name": "Prune backups"
     }
   },
   "exceptions": {

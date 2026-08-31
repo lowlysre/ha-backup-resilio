@@ -1,4 +1,0 @@
-prune_backups:
-  name: Prune backups
-  description: Delete backups beyond the configured retention limit for every loaded Resilio Backup entry.
-  fields: {}

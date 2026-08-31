@@ -24,8 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `resilio_backup.prune_backups` now registers once at component setup instead of per config entry, so it stays available for as long as any entry is loaded.
 - Service and backup-agent failures now raise translatable exceptions instead of plain error strings.
+
+### Removed
+
+- The `max_backups`/`prune_enabled` options and the `resilio_backup.prune_backups` service. Backup retention for this location is now configured the same way as any other backup location, in **Settings > System > Backups > Settings > Backup locations** (gear icon next to Resilio Backup), which Home Assistant core applies automatically.
 
 ### Fixed
 

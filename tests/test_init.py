@@ -8,7 +8,6 @@ import aiohttp
 
 from homeassistant.config_entries import ConfigEntryState
 
-from custom_components.resilio_backup.const import DOMAIN, SERVICE_PRUNE_BACKUPS
 from tests.common import MOCK_FOLDER, build_mock_entry, mock_token_endpoint, setup_integration
 
 
@@ -18,7 +17,6 @@ async def test_setup_entry_success(hass, aioclient_mock) -> None:
 
     assert entry.state is ConfigEntryState.LOADED
     assert entry.runtime_data.coordinator.data.folder_id == MOCK_FOLDER["id"]
-    assert hass.services.has_service(DOMAIN, SERVICE_PRUNE_BACKUPS)
 
 
 async def test_setup_entry_not_ready_on_refresh_failure(hass, aioclient_mock) -> None:
@@ -39,13 +37,12 @@ async def test_setup_entry_not_ready_on_refresh_failure(hass, aioclient_mock) ->
 
 
 async def test_unload_entry_success(hass, aioclient_mock) -> None:
-    """The config entry unloads cleanly, leaving the component-level service registered."""
+    """The config entry unloads cleanly."""
     entry = await setup_integration(hass, aioclient_mock)
 
     assert await hass.config_entries.async_unload(entry.entry_id) is True
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.NOT_LOADED
-    assert hass.services.has_service(DOMAIN, SERVICE_PRUNE_BACKUPS)
 
 
 async def test_options_update_schedules_reload(hass) -> None:
@@ -56,7 +53,7 @@ async def test_options_update_schedules_reload(hass) -> None:
     with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
         result = await hass.config_entries.options.async_init(entry.entry_id)
         await hass.config_entries.options.async_configure(
-            result["flow_id"], {"max_backups": 4, "prune_enabled": True}
+            result["flow_id"], {"scan_interval": 120}
         )
         await hass.async_block_till_done()
 
