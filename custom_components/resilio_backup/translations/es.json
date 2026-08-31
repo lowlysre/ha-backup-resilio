@@ -121,8 +121,6 @@
     "step": {
       "init": {
         "data": {
-          "max_backups": "Máximo de copias de seguridad",
-          "prune_enabled": "Habilitar limpieza",
           "scan_interval": "Intervalo de consulta"
         },
         "data_description": {
@@ -130,12 +128,6 @@
         },
         "title": "Opciones de Resilio Backup"
       }
-    }
-  },
-  "services": {
-    "prune_backups": {
-      "description": "Elimina las copias de seguridad que superen el límite de retención configurado para cada entrada de Resilio Backup cargada.",
-      "name": "Limpiar copias de seguridad"
     }
   },
   "exceptions": {

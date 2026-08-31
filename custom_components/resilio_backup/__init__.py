@@ -5,7 +5,6 @@ from __future__ import annotations
 from functools import partial
 
 from homeassistant.components import persistent_notification
-from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
     CONF_HOST,
     CONF_PASSWORD,
@@ -14,29 +13,20 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STARTED,
     Platform,
 )
-from homeassistant.core import Event, HomeAssistant, ServiceCall
+from homeassistant.core import Event, HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
 from .api import ResilioApiClient
-from .backup import async_notify_backup_listeners, async_prune_backups
+from .backup import async_notify_backup_listeners
 from .const import (
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
     DATA_PENDING_LOCATIONS_CHECK,
     DOMAIN,
-    SERVICE_PRUNE_BACKUPS,
 )
 from .coordinator import ResilioBackupData, ResilioConfigEntry, ResilioDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
-
-
-async def _async_handle_prune_service(hass: HomeAssistant, _call: ServiceCall) -> None:
-    """Handle pruning old backups for all loaded entries."""
-    loaded_entry: ResilioConfigEntry
-    for loaded_entry in hass.config_entries.async_entries(DOMAIN):
-        if loaded_entry.state is ConfigEntryState.LOADED:
-            await async_prune_backups(hass, loaded_entry)
 
 
 async def _async_handle_pending_locations_check(hass: HomeAssistant, _event: Event) -> None:
@@ -73,9 +63,6 @@ async def _async_handle_pending_locations_check(hass: HomeAssistant, _event: Eve
 
 async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     """Set up the integration."""
-    hass.services.async_register(
-        DOMAIN, SERVICE_PRUNE_BACKUPS, partial(_async_handle_prune_service, hass)
-    )
     hass.bus.async_listen_once(
         EVENT_HOMEASSISTANT_STARTED, partial(_async_handle_pending_locations_check, hass)
     )

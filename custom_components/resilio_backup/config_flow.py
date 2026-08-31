@@ -34,16 +34,12 @@ from .const import (
     CONF_BACKUP_PATH,
     CONF_FOLDER_ID,
     CONF_FOLDER_PATH,
-    CONF_MAX_BACKUPS,
-    CONF_PRUNE_ENABLED,
     CONF_SCAN_INTERVAL,
     CONF_SEND_PEER_INVITE,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
     DATA_PENDING_LOCATIONS_CHECK,
-    DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
-    DEFAULT_PRUNE_ENABLED,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEND_PEER_INVITE,
     DEFAULT_USE_SSL,
@@ -569,7 +565,6 @@ class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):
     ) -> ConfigFlowResult:
         """Manage integration options."""
         if user_input is not None:
-            user_input[CONF_MAX_BACKUPS] = int(user_input[CONF_MAX_BACKUPS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             return self.async_create_entry(title="", data=user_input)
 
@@ -577,24 +572,6 @@ class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):
             step_id="init",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_MAX_BACKUPS,
-                        default=self.config_entry.options.get(
-                            CONF_MAX_BACKUPS, DEFAULT_MAX_BACKUPS
-                        ),
-                    ): NumberSelector(
-                        NumberSelectorConfig(
-                            min=0,
-                            mode=NumberSelectorMode.BOX,
-                            step=1,
-                        )
-                    ),
-                    vol.Required(
-                        CONF_PRUNE_ENABLED,
-                        default=self.config_entry.options.get(
-                            CONF_PRUNE_ENABLED, DEFAULT_PRUNE_ENABLED
-                        ),
-                    ): bool,
                     vol.Required(
                         CONF_SCAN_INTERVAL,
                         default=self.config_entry.options.get(

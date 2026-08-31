@@ -48,37 +48,17 @@ automation:
           message: "Resilio backup sync has been failing for 10+ minutes."
 ```
 
-Prune old backups on a schedule instead of relying on `prune_enabled`:
-
-```yaml
-automation:
-  - alias: "Weekly Resilio backup prune"
-    trigger:
-      - trigger: time
-        at: "03:00:00"
-    condition:
-      - condition: time
-        weekday:
-          - sun
-    action:
-      - action: resilio_backup.prune_backups
-```
-
 ## Options
 
-- `max_backups`
-  - Number of backups to keep per configured location
-  - `0` means unlimited
-- `prune_enabled`
-  - Enables or disables automatic pruning after upload
 - `scan_interval`
   - Seconds between polls of the Resilio Sync API for folder status
   - Defaults to `300`, minimum `10`
 
-## Service
+## Backup retention
 
-### `resilio_backup.prune_backups`
-
-Runs retention pruning immediately for every loaded Resilio Backup entry.
-
-No service fields are required.
+This integration doesn't manage its own retention. Set how many backups (or how
+many days) to keep for this location under **Settings > System > Backups >
+Settings > Backup locations**, using the gear icon next to Resilio Backup,
+exactly like any other backup location (e.g. Dropbox). Home Assistant core
+applies that retention automatically after each backup and deletes old
+backups on your behalf.
