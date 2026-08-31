@@ -45,6 +45,9 @@ jobs:
       run: |
         python -m pytest --cov --cov-report term-missing --cov-config=pyproject.toml
     - name: Coveralls
+      # Coveralls' GitHub-token flow needs a public repo; this one is
+      # private for now, so submission 422s. Non-blocking until it's public.
+      continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
