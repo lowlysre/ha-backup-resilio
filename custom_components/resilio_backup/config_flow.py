@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
 from typing import Any, Self, override
 
+import qrcode
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -43,6 +46,22 @@ from .const import (
 )
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _render_qr_data_uri(link: str) -> str:
+    """Render a link as a base64 PNG data URI, for embedding in a notification.
+
+    Resilio's own WebUI draws its peer-invite QR client-side, from the same
+    link text `getsynclink` returns (`app.js`'s `generateQRCode`); there's no
+    server-side endpoint that returns a QR image. This does the same
+    rendering here instead, off the event loop since `qrcode`/Pillow are
+    both synchronous.
+    """
+    buffer = io.BytesIO()
+    qrcode.make(link).save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode()
+    return f"data:image/png;base64,{encoded}"
+
 
 CONF_FOLDER_CHOICE = "folder_choice"
 CONF_NEW_FOLDER_PATH = "new_folder_path"
@@ -309,12 +328,22 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not link:
             return
 
+        message = (
+            "Share this link with another device to add it as a peer for "
+            f"your Resilio Backup folder:\n\n{link}"
+        )
+
+        try:
+            qr_data_uri = await self.hass.async_add_executor_job(_render_qr_data_uri, link)
+        # pylint: disable=broad-exception-caught
+        except Exception:  # noqa: BLE001
+            LOGGER.debug("Could not render a QR code for the peer-invite link", exc_info=True)
+        else:
+            message += f"\n\n![Peer invite QR code]({qr_data_uri})"
+
         persistent_notification.async_create(
             self.hass,
-            (
-                "Share this link with another device to add it as a peer for "
-                f"your Resilio Backup folder:\n\n{link}"
-            ),
+            message,
             title="Resilio Backup: invite a peer",
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
         )

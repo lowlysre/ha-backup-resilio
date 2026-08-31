@@ -321,7 +321,7 @@ async def test_backup_path_matching_folder_skips_warning(hass, mock_client) -> N
 
 
 async def test_backup_path_posts_peer_invite_notification(hass, mock_client) -> None:
-    """A non-empty share link is surfaced as a persistent notification."""
+    """A non-empty share link is surfaced as a persistent notification with a QR code."""
     mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
     flow = build_flow(hass)
     setattr(flow, "_folder", MOCK_FOLDER)
@@ -333,7 +333,9 @@ async def test_backup_path_posts_peer_invite_notification(hass, mock_client) -> 
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_called_once()
-    assert "https://link.resilio.com/#f=test" in notify.call_args.args[1]
+    message = notify.call_args.args[1]
+    assert "https://link.resilio.com/#f=test" in message
+    assert "![Peer invite QR code](data:image/png;base64," in message
 
 
 async def test_backup_path_peer_invite_failure_does_not_block_entry(hass, mock_client) -> None:
@@ -364,3 +366,27 @@ async def test_backup_path_empty_share_link_skips_notification(hass, mock_client
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_not_called()
+
+
+async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client) -> None:
+    """A QR rendering failure still posts the link, just without an image."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with (
+        patch(
+            "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+        ) as notify,
+        patch(
+            "custom_components.resilio_backup.config_flow._render_qr_data_uri",
+            side_effect=RuntimeError("boom"),
+        ),
+    ):
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_called_once()
+    message = notify.call_args.args[1]
+    assert "https://link.resilio.com/#f=test" in message
+    assert "data:image/png;base64" not in message
