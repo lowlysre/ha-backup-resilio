@@ -7,8 +7,8 @@ rules:
   action-setup: done
   appropriate-polling: done
   brands:
-    status: todo
-    comment: No icon/logo submitted to home-assistant/brands yet.
+    status: done
+    comment: Icon and logo assets ship in-repo under custom_components/resilio_backup/brand/.
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
