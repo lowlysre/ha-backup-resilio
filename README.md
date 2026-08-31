@@ -86,7 +86,7 @@ The integration also creates:
 
 ## Data updates
 
-All entities are backed by a single [`DataUpdateCoordinator`](https://developers.home-assistant.io/docs/integration_fetching_data/) that polls the Resilio `/gui/` API on the `scan_interval` option (default 60 seconds, minimum 10). There is no push/webhook support (Resilio Sync's WebUI API doesn't offer one), so entity state can lag actual sync activity by up to that interval.
+All entities are backed by a single [`DataUpdateCoordinator`](https://developers.home-assistant.io/docs/integration_fetching_data/) that polls the Resilio `/gui/` API on the `scan_interval` option (default 300 seconds, minimum 10). There is no push/webhook support (Resilio Sync's WebUI API doesn't offer one), so entity state can lag actual sync activity by up to that interval.
 
 ## Automation examples
 
