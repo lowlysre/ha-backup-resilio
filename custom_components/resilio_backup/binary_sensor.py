@@ -15,6 +15,9 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .coordinator import ResilioDataUpdateCoordinator
 from .entity import ResilioEntity
 
+# Coordinator centralizes data updates; this is a read-only platform.
+PARALLEL_UPDATES = 0
+
 
 class ResilioConnectivityBinarySensor(ResilioEntity, BinarySensorEntity):
     """Represent overall folder connectivity."""

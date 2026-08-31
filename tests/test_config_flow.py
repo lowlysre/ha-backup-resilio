@@ -440,3 +440,94 @@ async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client)
     message = notify.call_args.args[1]
     assert "https://link.resilio.com/#f=test" in message
     assert "data:image/png;base64" not in message
+
+
+async def test_reauth_flow_updates_credentials(hass, mock_client) -> None:
+    """Reauth validates and stores updated credentials, then reloads the entry."""
+    assert mock_client is not None
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    assert result["step_id"] == "reauth_confirm"
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**MOCK_USER_INPUT, "password": "new-secret"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.data["password"] == "new-secret"
+    schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_reauth_flow_invalid_auth(hass, mock_client) -> None:
+    """Reauth surfaces invalid credentials instead of updating the entry."""
+    mock_client.get_os.side_effect = ResilioAuthError("bad auth")
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**MOCK_USER_INPUT, "password": "wrong"}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "invalid_auth"}
+    assert entry.data["password"] != "wrong"
+
+
+async def test_reconfigure_flow_updates_connection(hass, mock_client) -> None:
+    """Reconfigure validates and stores updated connection details."""
+    assert mock_client is not None
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["step_id"] == "reconfigure"
+
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {**MOCK_USER_INPUT, "host": "new-resilio.local"}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data["host"] == "new-resilio.local"
+    assert entry.unique_id == f"new-resilio.local:{entry.data['port']}"
+    schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_reconfigure_flow_already_configured(hass, mock_client) -> None:
+    """Reconfiguring onto an endpoint already used by another entry aborts."""
+    assert mock_client is not None
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+    other_entry = build_mock_entry(hass, host="other.local")
+    other_entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**MOCK_USER_INPUT, "host": "other.local"}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_reconfigure_flow_cannot_connect(hass, mock_client) -> None:
+    """Reconfigure surfaces connection failures."""
+    mock_client.get_os.side_effect = ResilioConnectionError("down")
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], MOCK_USER_INPUT
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}

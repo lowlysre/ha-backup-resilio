@@ -39,13 +39,13 @@ async def test_setup_entry_not_ready_on_refresh_failure(hass, aioclient_mock) ->
 
 
 async def test_unload_entry_success(hass, aioclient_mock) -> None:
-    """The config entry unloads cleanly."""
+    """The config entry unloads cleanly, leaving the component-level service registered."""
     entry = await setup_integration(hass, aioclient_mock)
 
     assert await hass.config_entries.async_unload(entry.entry_id) is True
     await hass.async_block_till_done()
     assert entry.state is ConfigEntryState.NOT_LOADED
-    assert not hass.services.has_service(DOMAIN, SERVICE_PRUNE_BACKUPS)
+    assert hass.services.has_service(DOMAIN, SERVICE_PRUNE_BACKUPS)
 
 
 async def test_options_update_schedules_reload(hass) -> None:

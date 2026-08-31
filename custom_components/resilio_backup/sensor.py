@@ -18,6 +18,9 @@ from homeassistant.core import HomeAssistant
 from .coordinator import ResilioDataUpdateCoordinator
 from .entity import ResilioEntity
 
+# Coordinator centralizes data updates; this is a read-only platform.
+PARALLEL_UPDATES = 0
+
 
 class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     """Expose the current folder sync state."""
@@ -25,7 +28,6 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["in_sync", "syncing", "paused", "error", "unknown"]
     _attr_translation_key = "sync_state"
-    _attr_icon = "mdi:folder-sync"
 
     def __init__(
         self,
@@ -74,7 +76,6 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "file_count"
-    _attr_icon = "mdi:file-document-multiple"
 
     def __init__(
         self,
@@ -97,7 +98,6 @@ class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "peer_count"
-    _attr_icon = "mdi:account-switch"
 
     def __init__(
         self,
@@ -121,7 +121,6 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "last_updated"
-    _attr_icon = "mdi:clock-check-outline"
 
     def __init__(
         self,

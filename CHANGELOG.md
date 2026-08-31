@@ -15,8 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selected Resilio folder's own path, and posts a peer-invite link (with a
   QR code) as a persistent notification once the entry is created.
 - `scan_interval` option to configure how often the coordinator polls the Resilio Sync API (default 60s, minimum 10s).
-- Reauth flow: rejected credentials now prompt for a password update instead of leaving entities unavailable.
-- `manifest.json` now declares a minimum supported Home Assistant version (2024.12.0), matching `hacs.json`, so HA core blocks setup on older installs instead of failing at runtime.
+- Reauthentication flow, triggered when Resilio rejects the configured credentials.
+- Reconfigure flow to update connection details without removing and re-adding the integration.
+- Diagnostic and troubleshooting documentation, entity/use-case tables, and automation examples in the README.
+- `quality_scale.yaml` self-assessment tracking this integration's alignment with Home Assistant's Integration Quality Scale.
+
+### Changed
+
+- `resilio_backup.prune_backups` now registers once at component setup instead of per config entry, so it stays available for as long as any entry is loaded.
+- Service and backup-agent failures now raise translatable exceptions instead of plain error strings.
+
+### Fixed
+
+- Sensors and the binary sensor now declare `PARALLEL_UPDATES = 0` since they're coordinator-backed and read-only.
+- Authentication failures now raise `ConfigEntryAuthFailed` instead of a generic update failure, so Home Assistant prompts for reauthentication.
 
 ## [0.1.0] - 2026-08-30
 

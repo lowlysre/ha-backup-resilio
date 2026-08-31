@@ -151,7 +151,7 @@ async def test_coordinator_failures_map_to_update_failed(hass, exception) -> Non
 
 
 async def test_coordinator_auth_failure_triggers_reauth(hass) -> None:
-    """An auth rejection raises ConfigEntryAuthFailed to trigger the reauth flow."""
+    """An auth failure raises ConfigEntryAuthFailed to trigger the reauth flow."""
     entry = build_mock_entry(hass)
     client = AsyncMock()
     client.async_get_folder.side_effect = ResilioAuthError("bad auth")

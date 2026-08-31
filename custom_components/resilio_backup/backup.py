@@ -131,7 +131,11 @@ class ResilioBackupAgent(BackupAgent):
         for backup in await self.async_list_backups():
             if backup.backup_id == backup_id:
                 return backup
-        raise BackupNotFound(f"Backup {backup_id} not found")
+        raise BackupNotFound(
+            translation_domain=DOMAIN,
+            translation_key="backup_not_found",
+            translation_placeholders={"backup_id": backup_id},
+        )
 
     async def async_upload_backup(
         self,
@@ -171,7 +175,11 @@ class ResilioBackupAgent(BackupAgent):
             await self._hass.async_add_executor_job(
                 lambda: metadata_path.unlink(missing_ok=True)
             )
-            raise BackupAgentError(f"Failed to store backup {backup.backup_id}") from err
+            raise BackupAgentError(
+                translation_domain=DOMAIN,
+                translation_key="upload_backup_failed",
+                translation_placeholders={"backup_id": backup.backup_id},
+            ) from err
 
     async def async_download_backup(
         self,
@@ -181,7 +189,11 @@ class ResilioBackupAgent(BackupAgent):
         """Yield backup contents as chunks."""
         tar_path = self._get_tar_path(backup_id)
         if not await self._hass.async_add_executor_job(tar_path.exists):
-            raise BackupNotFound(f"Backup {backup_id} not found")
+            raise BackupNotFound(
+                translation_domain=DOMAIN,
+                translation_key="backup_not_found",
+                translation_placeholders={"backup_id": backup_id},
+            )
 
         async def _iterate_file() -> AsyncIterator[bytes]:
             file_handle = await self._hass.async_add_executor_job(tar_path.open, "rb")
@@ -203,7 +215,11 @@ class ResilioBackupAgent(BackupAgent):
         tar_path = self._get_tar_path(backup_id)
         metadata_path = self._get_metadata_path(backup_id)
         if not await self._hass.async_add_executor_job(tar_path.exists):
-            raise BackupNotFound(f"Backup {backup_id} not found")
+            raise BackupNotFound(
+                translation_domain=DOMAIN,
+                translation_key="backup_not_found",
+                translation_placeholders={"backup_id": backup_id},
+            )
 
         try:
             await self._hass.async_add_executor_job(tar_path.unlink)
@@ -211,7 +227,11 @@ class ResilioBackupAgent(BackupAgent):
                 lambda: metadata_path.unlink(missing_ok=True)
             )
         except OSError as err:
-            raise BackupAgentError(f"Failed to delete backup {backup_id}") from err
+            raise BackupAgentError(
+                translation_domain=DOMAIN,
+                translation_key="delete_backup_failed",
+                translation_placeholders={"backup_id": backup_id},
+            ) from err
 
 
 async def async_prune_backups(hass: HomeAssistant, entry: ConfigEntry) -> int:
