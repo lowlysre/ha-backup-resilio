@@ -24,6 +24,7 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["in_sync", "syncing", "paused", "error", "unknown"]
     _attr_translation_key = "sync_state"
+    _attr_icon = "mdi:folder-sync"
 
     def __init__(
         self,
@@ -72,6 +73,7 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "file_count"
+    _attr_icon = "mdi:file-document-multiple"
 
     def __init__(
         self,
@@ -94,6 +96,7 @@ class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "peer_count"
+    _attr_icon = "mdi:account-switch"
 
     def __init__(
         self,

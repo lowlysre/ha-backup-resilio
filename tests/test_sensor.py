@@ -35,6 +35,7 @@ def test_sync_state_sensor_normalizes_state(hass) -> None:
     entry = build_mock_entry(hass)
     sensor = ResilioSyncStateSensor(build_coordinator("SYNCING"), entry)
     assert sensor.native_value == "syncing"
+    assert sensor.icon == "mdi:folder-sync"
 
 
 def test_sync_state_sensor_falls_back_to_unknown(hass) -> None:
@@ -49,5 +50,9 @@ def test_size_file_and_peer_sensors(hass) -> None:
     entry = build_mock_entry(hass)
     coordinator = build_coordinator()
     assert ResilioFolderSizeSensor(coordinator, entry).native_value == 2048
-    assert ResilioFileCountSensor(coordinator, entry).native_value == 16
-    assert ResilioPeerCountSensor(coordinator, entry).native_value == 3
+    file_count_sensor = ResilioFileCountSensor(coordinator, entry)
+    assert file_count_sensor.native_value == 16
+    assert file_count_sensor.icon == "mdi:file-document-multiple"
+    peer_count_sensor = ResilioPeerCountSensor(coordinator, entry)
+    assert peer_count_sensor.native_value == 3
+    assert peer_count_sensor.icon == "mdi:account-switch"
