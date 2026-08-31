@@ -59,7 +59,7 @@ After setup, this location shows up under **Settings > System > Backups**. Core 
 
 The integration also creates:
 
-- `sensor` entities for sync state, folder size, file count, and connected peers
+- `sensor` entities for sync state, folder size, file count, connected peers, and last updated
 - a `binary_sensor` for connectivity
 
 ## Options

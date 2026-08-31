@@ -58,6 +58,9 @@
       "folder_size": {
         "name": "Folder size"
       },
+      "last_updated": {
+        "name": "Last updated"
+      },
       "peer_count": {
         "name": "Connected peers"
       },
