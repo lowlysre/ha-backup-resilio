@@ -82,6 +82,47 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._folder: dict[str, Any] = {}
         self._pending_backup_path: str | None = None
 
+    @staticmethod
+    def _connection_schema(defaults: dict[str, Any]) -> vol.Schema:
+        """Build the schema shared by the user, reauth, and reconfigure steps."""
+        return vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=defaults[CONF_HOST]): str,
+                vol.Required(CONF_PORT, default=defaults[CONF_PORT]): int,
+                vol.Required(CONF_USERNAME, default=defaults[CONF_USERNAME]): str,
+                vol.Required(CONF_PASSWORD): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
+                vol.Required(CONF_USE_SSL, default=defaults[CONF_USE_SSL]): bool,
+                vol.Required(CONF_VERIFY_SSL, default=defaults[CONF_VERIFY_SSL]): bool,
+            }
+        )
+
+    async def _async_validate_connection(
+        self, user_input: dict[str, Any]
+    ) -> dict[str, str]:
+        """Test a connection with the given input, returning any form errors."""
+        client = ResilioApiClient(
+            self.hass,
+            user_input[CONF_HOST],
+            user_input[CONF_PORT],
+            user_input[CONF_USERNAME],
+            user_input[CONF_PASSWORD],
+            user_input[CONF_USE_SSL],
+            user_input[CONF_VERIFY_SSL],
+        )
+        try:
+            await client.async_get_os()
+        except ResilioAuthError:
+            return {"base": "invalid_auth"}
+        except ResilioConnectionError:
+            return {"base": "cannot_connect"}
+        # pylint: disable=broad-exception-caught
+        except Exception:  # noqa: BLE001
+            LOGGER.exception("Unexpected exception while connecting to Resilio")
+            return {"base": "unknown"}
+        return {}
+
     def _get_client(self) -> ResilioApiClient:
         """Build the API client from stored data."""
         return ResilioApiClient(
@@ -123,26 +164,8 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            client = ResilioApiClient(
-                self.hass,
-                user_input[CONF_HOST],
-                user_input[CONF_PORT],
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
-                user_input[CONF_USE_SSL],
-                user_input[CONF_VERIFY_SSL],
-            )
-            try:
-                await client.async_get_os()
-            except ResilioAuthError:
-                errors["base"] = "invalid_auth"
-            except ResilioConnectionError:
-                errors["base"] = "cannot_connect"
-            # pylint: disable=broad-exception-caught
-            except Exception:  # noqa: BLE001
-                LOGGER.exception("Unexpected exception while connecting to Resilio")
-                errors["base"] = "unknown"
-            else:
+            errors = await self._async_validate_connection(user_input)
+            if not errors:
                 await self.async_set_unique_id(
                     f"{user_input[CONF_HOST]}:{user_input[CONF_PORT]}"
                 )
@@ -150,7 +173,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._data = user_input
                 return await self.async_step_folder()
 
-        user_input = user_input or {
+        defaults = user_input or {
             CONF_HOST: "",
             CONF_PORT: DEFAULT_PORT,
             CONF_USERNAME: "",
@@ -161,22 +184,65 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOST, default=user_input[CONF_HOST]): str,
-                    vol.Required(CONF_PORT, default=user_input[CONF_PORT]): int,
-                    vol.Required(CONF_USERNAME, default=user_input[CONF_USERNAME]): str,
-                    vol.Required(CONF_PASSWORD): TextSelector(
-                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                    ),
-                    vol.Required(
-                        CONF_USE_SSL, default=user_input[CONF_USE_SSL]
-                    ): bool,
-                    vol.Required(
-                        CONF_VERIFY_SSL, default=user_input[CONF_VERIFY_SSL]
-                    ): bool,
-                }
-            ),
+            data_schema=self._connection_schema(defaults),
+            errors=errors,
+        )
+
+    @override
+    async def async_step_reauth(
+        self, _entry_data: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Handle re-authentication when Resilio rejects our credentials."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm re-authentication with updated credentials."""
+        reauth_entry = self._get_reauth_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            new_data = {**reauth_entry.data, **user_input}
+            errors = await self._async_validate_connection(new_data)
+            if not errors:
+                return self.async_update_reload_and_abort(
+                    reauth_entry, data_updates=user_input
+                )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=self._connection_schema(reauth_entry.data),
+            errors=errors,
+        )
+
+    @override
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of the connection details."""
+        reconfigure_entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            errors = await self._async_validate_connection(user_input)
+            if not errors:
+                new_unique_id = f"{user_input[CONF_HOST]}:{user_input[CONF_PORT]}"
+                for entry in self.hass.config_entries.async_entries(DOMAIN):
+                    if (
+                        entry.entry_id != reconfigure_entry.entry_id
+                        and entry.unique_id == new_unique_id
+                    ):
+                        return self.async_abort(reason="already_configured")
+                return self.async_update_reload_and_abort(
+                    reconfigure_entry,
+                    unique_id=new_unique_id,
+                    data_updates=user_input,
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self._connection_schema(reconfigure_entry.data),
             errors=errors,
         )
 
@@ -349,62 +415,6 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             message,
             title="Resilio Backup: invite a peer",
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
-        )
-
-    @override
-    async def async_step_reauth(
-        self, _entry_data: dict[str, Any]
-    ) -> ConfigFlowResult:
-        """Handle re-authentication triggered by rejected credentials."""
-        return await self.async_step_reauth_confirm()
-
-    async def async_step_reauth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Collect fresh credentials for an entry that failed authentication."""
-        errors: dict[str, str] = {}
-        reauth_entry = self._get_reauth_entry()
-
-        if user_input is not None:
-            client = ResilioApiClient(
-                self.hass,
-                reauth_entry.data[CONF_HOST],
-                reauth_entry.data[CONF_PORT],
-                user_input[CONF_USERNAME],
-                user_input[CONF_PASSWORD],
-                reauth_entry.data[CONF_USE_SSL],
-                reauth_entry.data[CONF_VERIFY_SSL],
-            )
-            try:
-                await client.async_get_os()
-            except ResilioAuthError:
-                errors["base"] = "invalid_auth"
-            except ResilioConnectionError:
-                errors["base"] = "cannot_connect"
-            # pylint: disable=broad-exception-caught
-            except Exception:  # noqa: BLE001
-                LOGGER.exception("Unexpected exception while reauthenticating with Resilio")
-                errors["base"] = "unknown"
-            else:
-                return self.async_update_reload_and_abort(
-                    reauth_entry,
-                    data={**reauth_entry.data, **user_input},
-                )
-
-        return self.async_show_form(
-            step_id="reauth_confirm",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_USERNAME, default=reauth_entry.data[CONF_USERNAME]
-                    ): str,
-                    vol.Required(CONF_PASSWORD): TextSelector(
-                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                    ),
-                }
-            ),
-            description_placeholders={"host": reauth_entry.data[CONF_HOST]},
-            errors=errors,
         )
 
 

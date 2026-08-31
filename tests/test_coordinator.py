@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -18,8 +19,10 @@ from custom_components.resilio_backup.api import (
 from custom_components.resilio_backup.const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
     EVENT_FILE_COUNT_CHANGED,
     EVENT_PEER_COUNT_CHANGED,
+    ISSUE_FOLDER_NOT_FOUND,
 )
 from custom_components.resilio_backup.coordinator import (
     ResilioDataUpdateCoordinator,
@@ -51,6 +54,7 @@ async def test_coordinator_success(hass) -> None:
     assert data.size == 2048
     assert data.files == 16
     assert data.peers == 3
+    assert data.peers_total == 3
     assert data.state == "in_sync"
     assert data.last_success <= dt_util.utcnow()
 
@@ -75,7 +79,9 @@ async def test_coordinator_peers_as_list(hass) -> None:
     """A `peers` field shaped as a list of peer objects counts its entries.
 
     Some Resilio versions return `peers` as a list of peer dicts instead of a
-    count, which used to crash `int()` in the coordinator.
+    count, which used to crash `int()` in the coordinator. Without a separate
+    `onlinepeerscount` field there's no way to tell connected apart from
+    configured, so both collapse to the list length.
     """
     entry = build_mock_entry(hass)
     client = AsyncMock()
@@ -88,6 +94,30 @@ async def test_coordinator_peers_as_list(hass) -> None:
     data = await coordinator.async_test_update()
 
     assert data.peers == 2
+    assert data.peers_total == 2
+
+
+async def test_coordinator_distinguishes_connected_from_total_peers(hass) -> None:
+    """`onlinepeerscount` gives the connected count separately from the peer list.
+
+    Real Resilio `/gui/` responses always carry both fields (confirmed
+    against a live capture, see tools/resilio_capture/capture.py); one peer
+    can be configured but offline, which `peers` (connected) alone can't
+    show.
+    """
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = {
+        **MOCK_FOLDER,
+        "peers": [{"name": "peer-a"}, {"name": "peer-b"}],
+        "onlinepeerscount": 1,
+    }
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    data = await coordinator.async_test_update()
+
+    assert data.peers == 1
+    assert data.peers_total == 2
 
 
 @pytest.mark.parametrize(
@@ -151,7 +181,7 @@ async def test_coordinator_failures_map_to_update_failed(hass, exception) -> Non
 
 
 async def test_coordinator_auth_failure_triggers_reauth(hass) -> None:
-    """An auth rejection raises ConfigEntryAuthFailed to trigger the reauth flow."""
+    """An auth failure raises ConfigEntryAuthFailed to trigger the reauth flow."""
     entry = build_mock_entry(hass)
     client = AsyncMock()
     client.async_get_folder.side_effect = ResilioAuthError("bad auth")
@@ -159,6 +189,42 @@ async def test_coordinator_auth_failure_triggers_reauth(hass) -> None:
 
     with pytest.raises(ConfigEntryAuthFailed):
         await coordinator.async_test_update()
+
+
+async def test_coordinator_folder_not_found_raises_repair_issue(hass) -> None:
+    """A missing folder raises a repair issue pointing at reconfigure/recreate."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.side_effect = ResilioFolderNotFoundError("missing")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    with pytest.raises(UpdateFailed):
+        await coordinator.async_test_update()
+
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, f"{ISSUE_FOLDER_NOT_FOUND}_{entry.entry_id}"
+    )
+    assert issue is not None
+    assert issue.translation_key == ISSUE_FOLDER_NOT_FOUND
+
+
+async def test_coordinator_clears_repair_issue_on_recovery(hass) -> None:
+    """A successful update after a missing folder clears the repair issue."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.side_effect = ResilioFolderNotFoundError("missing")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    issue_id = f"{ISSUE_FOLDER_NOT_FOUND}_{entry.entry_id}"
+
+    with pytest.raises(UpdateFailed):
+        await coordinator.async_test_update()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+    client.async_get_folder.side_effect = None
+    client.async_get_folder.return_value = MOCK_FOLDER
+    await coordinator.async_test_update()
+
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
 
 
 async def test_no_events_fire_on_first_update(hass) -> None:

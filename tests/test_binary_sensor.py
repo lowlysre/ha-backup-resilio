@@ -19,6 +19,7 @@ def build_coordinator(state: str = "in_sync", success: bool = True) -> SimpleNam
             size=2048,
             files=16,
             peers=3,
+            peers_total=3,
             state=state,
         ),
         last_update_success=success,

@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import ResilioDataUpdateCoordinator
+from .coordinator import ResilioConfigEntry, ResilioDataUpdateCoordinator
 
 
 class ResilioEntity(CoordinatorEntity[ResilioDataUpdateCoordinator]):
@@ -19,7 +18,7 @@ class ResilioEntity(CoordinatorEntity[ResilioDataUpdateCoordinator]):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)

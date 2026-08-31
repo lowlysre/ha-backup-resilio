@@ -1,0 +1,21 @@
+{
+  "entity": {
+    "sensor": {
+      "sync_state": {
+        "default": "mdi:folder-sync"
+      },
+      "file_count": {
+        "default": "mdi:file-document-multiple"
+      },
+      "peer_count_connected": {
+        "default": "mdi:account-switch"
+      },
+      "peer_count_total": {
+        "default": "mdi:account-group"
+      },
+      "last_updated": {
+        "default": "mdi:clock-check-outline"
+      }
+    }
+  }
+}

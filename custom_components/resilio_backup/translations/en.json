@@ -1,7 +1,9 @@
 {
   "config": {
     "abort": {
-      "already_configured": "This Resilio endpoint is already configured."
+      "already_configured": "This Resilio endpoint is already configured.",
+      "reauth_successful": "Re-authentication was successful.",
+      "reconfigure_successful": "Reconfiguration was successful."
     },
     "error": {
       "cannot_connect": "Failed to connect to the Resilio API.",
@@ -34,11 +36,27 @@
       },
       "reauth_confirm": {
         "data": {
+          "host": "Host",
           "password": "Password",
-          "username": "Username"
+          "port": "Port",
+          "use_ssl": "Use SSL",
+          "username": "Username",
+          "verify_ssl": "Verify SSL certificate"
         },
-        "description": "The credentials for {host} were rejected. Enter valid Resilio credentials to reconnect.",
+        "description": "Resilio rejected the current credentials. Enter updated connection details.",
         "title": "Reauthenticate with Resilio Sync"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "password": "Password",
+          "port": "Port",
+          "use_ssl": "Use SSL",
+          "username": "Username",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "description": "Update the connection details for this Resilio Sync endpoint.",
+        "title": "Reconfigure Resilio Sync"
       },
       "user": {
         "data": {
@@ -70,8 +88,11 @@
       "last_updated": {
         "name": "Last updated"
       },
-      "peer_count": {
+      "peer_count_connected": {
         "name": "Connected peers"
+      },
+      "peer_count_total": {
+        "name": "Configured peers"
       },
       "sync_state": {
         "name": "Sync state",
@@ -104,6 +125,23 @@
     "prune_backups": {
       "description": "Delete backups beyond the configured retention limit for every loaded Resilio Backup entry.",
       "name": "Prune backups"
+    }
+  },
+  "exceptions": {
+    "backup_not_found": {
+      "message": "Backup {backup_id} not found."
+    },
+    "delete_backup_failed": {
+      "message": "Failed to delete backup {backup_id}."
+    },
+    "upload_backup_failed": {
+      "message": "Failed to store backup {backup_id}."
+    }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "Resilio folder no longer exists",
+      "description": "The Resilio folder configured for this entry (`{folder_id}`) is no longer present on the Resilio Sync server. Recreate the folder with the same ID on the Resilio side, or remove and re-add this integration to select a different folder."
     }
   }
 }

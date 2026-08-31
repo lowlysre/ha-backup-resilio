@@ -8,12 +8,14 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import ResilioDataUpdateCoordinator
+from .coordinator import ResilioConfigEntry, ResilioDataUpdateCoordinator
 from .entity import ResilioEntity
+
+# Coordinator centralizes data updates; this is a read-only platform.
+PARALLEL_UPDATES = 0
 
 
 class ResilioConnectivityBinarySensor(ResilioEntity, BinarySensorEntity):
@@ -25,7 +27,7 @@ class ResilioConnectivityBinarySensor(ResilioEntity, BinarySensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, entry)
@@ -40,7 +42,7 @@ class ResilioConnectivityBinarySensor(ResilioEntity, BinarySensorEntity):
 
 async def async_setup_entry(
     _hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ResilioConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the binary sensor platform."""

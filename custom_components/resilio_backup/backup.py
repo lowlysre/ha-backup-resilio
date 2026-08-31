@@ -11,7 +11,7 @@ from typing import Any
 
 from homeassistant.components.backup.agent import BackupAgent, OnProgressCallback
 from homeassistant.components.backup.models import AgentBackup, BackupAgentError, BackupNotFound
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
 from .const import (
@@ -23,6 +23,7 @@ from .const import (
     DOMAIN,
     EVENT_BACKUPS_PRUNED,
 )
+from .coordinator import ResilioConfigEntry
 
 LOGGER = logging.getLogger(__name__)
 LISTENERS_KEY = f"{DOMAIN}_backup_listeners"
@@ -34,11 +35,12 @@ async def async_get_backup_agents(
     **_kwargs: Any,
 ) -> list[BackupAgent]:
     """Return backup agents for all loaded entries."""
-    return [
-        ResilioBackupAgent(hass, entry)
-        for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.state is ConfigEntryState.LOADED
-    ]
+    agents: list[BackupAgent] = []
+    loaded_entry: ResilioConfigEntry
+    for loaded_entry in hass.config_entries.async_entries(DOMAIN):
+        if loaded_entry.state is ConfigEntryState.LOADED:
+            agents.append(ResilioBackupAgent(hass, loaded_entry))
+    return agents
 
 
 @callback
@@ -94,7 +96,7 @@ class ResilioBackupAgent(BackupAgent):
 
     domain = DOMAIN
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ResilioConfigEntry) -> None:
         """Initialize the agent."""
         self.name = entry.title
         self.unique_id = entry.entry_id
@@ -131,7 +133,11 @@ class ResilioBackupAgent(BackupAgent):
         for backup in await self.async_list_backups():
             if backup.backup_id == backup_id:
                 return backup
-        raise BackupNotFound(f"Backup {backup_id} not found")
+        raise BackupNotFound(
+            translation_domain=DOMAIN,
+            translation_key="backup_not_found",
+            translation_placeholders={"backup_id": backup_id},
+        )
 
     async def async_upload_backup(
         self,
@@ -171,7 +177,11 @@ class ResilioBackupAgent(BackupAgent):
             await self._hass.async_add_executor_job(
                 lambda: metadata_path.unlink(missing_ok=True)
             )
-            raise BackupAgentError(f"Failed to store backup {backup.backup_id}") from err
+            raise BackupAgentError(
+                translation_domain=DOMAIN,
+                translation_key="upload_backup_failed",
+                translation_placeholders={"backup_id": backup.backup_id},
+            ) from err
 
     async def async_download_backup(
         self,
@@ -181,7 +191,11 @@ class ResilioBackupAgent(BackupAgent):
         """Yield backup contents as chunks."""
         tar_path = self._get_tar_path(backup_id)
         if not await self._hass.async_add_executor_job(tar_path.exists):
-            raise BackupNotFound(f"Backup {backup_id} not found")
+            raise BackupNotFound(
+                translation_domain=DOMAIN,
+                translation_key="backup_not_found",
+                translation_placeholders={"backup_id": backup_id},
+            )
 
         async def _iterate_file() -> AsyncIterator[bytes]:
             file_handle = await self._hass.async_add_executor_job(tar_path.open, "rb")
@@ -203,7 +217,11 @@ class ResilioBackupAgent(BackupAgent):
         tar_path = self._get_tar_path(backup_id)
         metadata_path = self._get_metadata_path(backup_id)
         if not await self._hass.async_add_executor_job(tar_path.exists):
-            raise BackupNotFound(f"Backup {backup_id} not found")
+            raise BackupNotFound(
+                translation_domain=DOMAIN,
+                translation_key="backup_not_found",
+                translation_placeholders={"backup_id": backup_id},
+            )
 
         try:
             await self._hass.async_add_executor_job(tar_path.unlink)
@@ -211,10 +229,14 @@ class ResilioBackupAgent(BackupAgent):
                 lambda: metadata_path.unlink(missing_ok=True)
             )
         except OSError as err:
-            raise BackupAgentError(f"Failed to delete backup {backup_id}") from err
+            raise BackupAgentError(
+                translation_domain=DOMAIN,
+                translation_key="delete_backup_failed",
+                translation_placeholders={"backup_id": backup_id},
+            ) from err
 
 
-async def async_prune_backups(hass: HomeAssistant, entry: ConfigEntry) -> int:
+async def async_prune_backups(hass: HomeAssistant, entry: ResilioConfigEntry) -> int:
     """Prune old backups for one entry."""
     if not entry.options.get(CONF_PRUNE_ENABLED, DEFAULT_PRUNE_ENABLED):
         return 0

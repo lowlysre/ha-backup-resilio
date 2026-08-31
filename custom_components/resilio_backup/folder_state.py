@@ -28,6 +28,21 @@ def safe_int(value: object, default: int = 0) -> int:
         return default
 
 
+def peer_counts(folder: Mapping[str, Any]) -> tuple[int, int]:
+    """Return (connected, total) peer counts for a raw Resilio folder object.
+
+    `peers` lists every peer Resilio knows about for the folder, online or
+    not; `onlinepeerscount` is Resilio's own count of the ones currently
+    connected. A version that folds `peers` into a plain scalar count
+    instead of a peer list has no way to tell the two apart, so connected
+    and total collapse to that same number.
+    """
+    total = safe_int(folder.get("peers"))
+    if "onlinepeerscount" in folder:
+        return safe_int(folder.get("onlinepeerscount")), total
+    return total, total
+
+
 def derive_sync_state(folder: Mapping[str, Any]) -> str:
     """Map a raw Resilio folder object to a `sync_state` sensor value.
 

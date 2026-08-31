@@ -10,13 +10,15 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfInformation
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.core import HomeAssistant
 
-from .coordinator import ResilioDataUpdateCoordinator
+from .coordinator import ResilioConfigEntry, ResilioDataUpdateCoordinator
 from .entity import ResilioEntity
+
+# Coordinator centralizes data updates; this is a read-only platform.
+PARALLEL_UPDATES = 0
 
 
 class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
@@ -25,12 +27,11 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = ["in_sync", "syncing", "paused", "error", "unknown"]
     _attr_translation_key = "sync_state"
-    _attr_icon = "mdi:folder-sync"
 
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -56,7 +57,7 @@ class ResilioFolderSizeSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -74,12 +75,11 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
 
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_translation_key = "file_count"
-    _attr_icon = "mdi:file-document-multiple"
 
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -92,27 +92,48 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
         return self.coordinator.data.files
 
 
-class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
+class ResilioPeerCountConnectedSensor(ResilioEntity, SensorEntity):
     """Expose the connected peer count."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_translation_key = "peer_count"
-    _attr_icon = "mdi:account-switch"
+    _attr_translation_key = "peer_count_connected"
 
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_peer_count"
+        self._attr_unique_id = f"{entry.entry_id}_peer_count_connected"
 
     @property
     @override
     def native_value(self) -> int:
-        """Return the peer count."""
+        """Return the connected peer count."""
         return self.coordinator.data.peers
+
+
+class ResilioPeerCountTotalSensor(ResilioEntity, SensorEntity):
+    """Expose the total number of peers configured for the folder."""
+
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "peer_count_total"
+
+    def __init__(
+        self,
+        coordinator: ResilioDataUpdateCoordinator,
+        entry: ResilioConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_peer_count_total"
+
+    @property
+    @override
+    def native_value(self) -> int:
+        """Return the configured peer count, connected or not."""
+        return self.coordinator.data.peers_total
 
 
 class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
@@ -121,12 +142,11 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "last_updated"
-    _attr_icon = "mdi:clock-check-outline"
 
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -141,7 +161,7 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
 
 async def async_setup_entry(
     _hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ResilioConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Resilio Backup sensors."""
@@ -151,7 +171,8 @@ async def async_setup_entry(
             ResilioSyncStateSensor(coordinator, entry),
             ResilioFolderSizeSensor(coordinator, entry),
             ResilioFileCountSensor(coordinator, entry),
-            ResilioPeerCountSensor(coordinator, entry),
+            ResilioPeerCountConnectedSensor(coordinator, entry),
+            ResilioPeerCountTotalSensor(coordinator, entry),
             ResilioLastUpdatedSensor(coordinator, entry),
         ]
     )

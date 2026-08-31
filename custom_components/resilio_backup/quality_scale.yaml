@@ -1,0 +1,107 @@
+# Self-assessment against Home Assistant's Integration Quality Scale
+# (https://developers.home-assistant.io/docs/core/integration-quality-scale/).
+# This integration is HACS-distributed, not part of home-assistant/core, so it
+# cannot receive an official badge. Target tier: Platinum.
+rules:
+  # Bronze
+  action-setup: done
+  appropriate-polling: done
+  brands:
+    status: done
+    comment: Icon and logo assets ship in-repo under custom_components/resilio_backup/brand/.
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency: done
+  docs-actions: done
+  docs-conditions:
+    status: exempt
+    comment: This integration does not provide any conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  docs-triggers:
+    status: exempt
+    comment: This integration does not provide any triggers.
+  entity-event-setup:
+    status: exempt
+    comment: Entities are coordinator-backed; none subscribe to push events directly.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery-update-info:
+    status: exempt
+    comment: Resilio's WebUI API has no discovery protocol (no zeroconf/SSDP/DHCP).
+  discovery:
+    status: exempt
+    comment: Resilio's WebUI API has no discovery protocol (no zeroconf/SSDP/DHCP).
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices:
+    status: exempt
+    comment: >-
+      Integration talks to the Resilio Sync WebUI API, not a specific device
+      family; there is no device list to enumerate.
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: Each config entry always creates exactly one static device; there is nothing to discover at runtime.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default:
+    status: exempt
+    comment: >-
+      Each config entry exposes exactly one of each entity, none of them
+      noisy, rarely useful, or expensive to poll (all come from the same
+      single folder-status API call), so there's nothing to opt out of by
+      default.
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues:
+    status: done
+    comment: >-
+      Auth failures go through the reauth flow; a missing/renamed Resilio
+      folder raises a repair issue since retrying won't fix it (the folder
+      was removed or renamed on the Resilio side), clearing once the folder
+      is reachable again.
+  stale-devices:
+    status: exempt
+    comment: Each config entry always creates exactly one static device; there are no dynamically-added devices to go stale.
+
+  # Platinum
+  async-dependency:
+    status: done
+    comment: >-
+      No separate PyPI dependency; the Resilio WebUI client in api.py is
+      bundled with the integration and fully async (async def throughout).
+  inject-websession: done
+  strict-typing:
+    status: done
+    comment: >-
+      ConfigEntry[ResilioBackupData] (aliased as ResilioConfigEntry in
+      coordinator.py) is used throughout instead of a plain ConfigEntry,
+      since runtime-data is implemented.
