@@ -1,0 +1,93 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This Resilio endpoint is already configured."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Resilio API.",
+      "invalid_auth": "The Resilio credentials were rejected.",
+      "no_folders": "No Resilio folders are available yet. Pick \"Create a new folder\" to continue.",
+      "unknown": "Unexpected error."
+    },
+    "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Backup path"
+        },
+        "description": "Confirm the local path Home Assistant writes backups into before they sync to the Resilio folder.",
+        "title": "Choose backup path"
+      },
+      "folder": {
+        "data": {
+          "folder_choice": "Resilio folder"
+        },
+        "description": "Pick an existing Resilio folder, or choose \"Create a new folder\" to add one.",
+        "title": "Choose backup folder"
+      },
+      "new_folder": {
+        "data": {
+          "new_folder_path": "New folder path"
+        },
+        "description": "Enter the path for the new Resilio folder.",
+        "title": "Create a new folder"
+      },
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Password",
+          "port": "Port",
+          "use_ssl": "Use SSL",
+          "username": "Username",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "description": "Connect Home Assistant to the local Resilio Sync API.",
+        "title": "Connect to Resilio Sync"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Connectivity"
+      }
+    },
+    "sensor": {
+      "file_count": {
+        "name": "File count"
+      },
+      "folder_size": {
+        "name": "Folder size"
+      },
+      "peer_count": {
+        "name": "Connected peers"
+      },
+      "sync_state": {
+        "name": "Sync state",
+        "state": {
+          "error": "Error",
+          "in sync": "In sync",
+          "paused": "Paused",
+          "syncing": "Syncing",
+          "unknown": "Unknown"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "max_backups": "Maximum backups",
+          "prune_enabled": "Enable pruning"
+        },
+        "title": "Resilio Backup options"
+      }
+    }
+  },
+  "services": {
+    "prune_backups": {
+      "description": "Delete backups beyond the configured retention limit for every loaded Resilio Backup entry.",
+      "name": "Prune backups"
+    }
+  }
+}
