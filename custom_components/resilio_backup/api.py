@@ -5,11 +5,14 @@ from __future__ import annotations
 import asyncio
 import base64
 from collections.abc import Mapping
+import logging
 from typing import Any
 
 import aiohttp
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+_LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
@@ -67,25 +70,41 @@ class ResilioApiClient:
         not_found_error: type[ResilioApiError] | None = None,
     ) -> Any:
         """Perform a request against the Resilio API."""
+        url = f"{self._base_url}{path}"
         try:
             async with self._session.request(
                 method,
-                f"{self._base_url}{path}",
+                url,
                 headers=self._headers,
                 json=json_body,
                 timeout=REQUEST_TIMEOUT,
                 ssl=self._ssl,
             ) as response:
                 if response.status in (401, 403):
+                    _LOGGER.debug(
+                        "Resilio API rejected credentials for %s %s (HTTP %s)",
+                        method,
+                        url,
+                        response.status,
+                    )
                     raise ResilioAuthError("Invalid Resilio API credentials")
                 if response.status == 404 and not_found_error is not None:
                     raise not_found_error(f"Resilio resource not found: {path}")
                 if response.status < 200 or response.status >= 300:
+                    body = await response.text()
+                    _LOGGER.debug(
+                        "Resilio API request %s %s failed with HTTP %s: %s",
+                        method,
+                        url,
+                        response.status,
+                        body,
+                    )
                     raise ResilioApiError(
                         f"Resilio API request failed with status {response.status}"
                     )
                 return await response.json(content_type=None)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.debug("Unable to reach Resilio API at %s: %s", url, err)
             raise ResilioConnectionError("Unable to connect to the Resilio API") from err
 
     async def async_get_os(self) -> dict[str, Any]:
