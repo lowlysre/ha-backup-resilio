@@ -55,6 +55,10 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
         result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
     )
     assert result["step_id"] == "backup_path"
+    assert result["description_placeholders"] == {
+        "folder_name": MOCK_FOLDER["name"],
+        "folder_path": MOCK_FOLDER["path"],
+    }
 
     # A path outside the Resilio folder warns instead of blocking...
     result = await hass.config_entries.flow.async_configure(

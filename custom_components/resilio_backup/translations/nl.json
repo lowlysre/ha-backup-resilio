@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Back-uppad"
         },
-        "description": "Dit is het lokale pad waarnaar Home Assistant de `.tar`/`.json`-bestanden van elke back-up schrijft. Resilio repliceert vervolgens alles wat het in zijn eigen map vindt naar je andere apparaten, dus dit pad moet normaal gesproken het eigen pad van de Resilio-map zijn (hieronder vooraf ingevuld) of een locatie daarbinnen.",
+        "description": "Dit is het lokale pad waarnaar Home Assistant de `.tar`/`.json`-bestanden van elke back-up schrijft. Resilio repliceert vervolgens alles wat het in zijn eigen map vindt naar je andere apparaten, dus dit pad moet normaal gesproken het eigen pad van de Resilio-map zijn (hieronder vooraf ingevuld) of een locatie daarbinnen.\n\nGeselecteerde map: **{folder_name}** ({folder_path})",
         "title": "Back-uppad kiezen"
       },
       "folder": {

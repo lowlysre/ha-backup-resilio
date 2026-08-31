@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Percorso di backup"
         },
-        "description": "Questo è il percorso locale in cui Home Assistant scrive i file `.tar`/`.json` di ogni backup. Resilio replica quindi tutto ciò che trova nella propria cartella sugli altri dispositivi, quindi questo percorso dovrebbe normalmente essere il percorso proprio della cartella Resilio (precompilato di seguito) o una posizione al suo interno.",
+        "description": "Questo è il percorso locale in cui Home Assistant scrive i file `.tar`/`.json` di ogni backup. Resilio replica quindi tutto ciò che trova nella propria cartella sugli altri dispositivi, quindi questo percorso dovrebbe normalmente essere il percorso proprio della cartella Resilio (precompilato di seguito) o una posizione al suo interno.\n\nCartella selezionata: **{folder_name}** ({folder_path})",
         "title": "Scegli il percorso di backup"
       },
       "folder": {

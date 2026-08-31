@@ -354,6 +354,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Choose where backups are staged before syncing to the folder."""
         errors: dict[str, str] = {}
         folder_path = str(self._folder.get("path", ""))
+        folder_name = str(self._folder.get("name") or folder_path or self._folder.get("id", ""))
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
@@ -392,6 +393,10 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+            description_placeholders={
+                "folder_name": folder_name,
+                "folder_path": folder_path or "unknown",
+            },
         )
 
     async def _async_notify_peer_invite(self) -> None:

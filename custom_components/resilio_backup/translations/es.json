@@ -17,7 +17,7 @@
         "data": {
           "backup_path": "Ruta de copia de seguridad"
         },
-        "description": "Esta es la ruta local en la que Home Assistant escribe los archivos `.tar`/`.json` de cada copia de seguridad. Resilio luego replica todo lo que encuentra dentro de su propia carpeta a tus otros dispositivos, por lo que esta ruta normalmente debería ser la ruta propia de la carpeta de Resilio (rellenada previamente abajo) o una ubicación dentro de ella.",
+        "description": "Esta es la ruta local en la que Home Assistant escribe los archivos `.tar`/`.json` de cada copia de seguridad. Resilio luego replica todo lo que encuentra dentro de su propia carpeta a tus otros dispositivos, por lo que esta ruta normalmente debería ser la ruta propia de la carpeta de Resilio (rellenada previamente abajo) o una ubicación dentro de ella.\n\nCarpeta seleccionada: **{folder_name}** ({folder_path})",
         "title": "Elegir ruta de copia de seguridad"
       },
       "folder": {
