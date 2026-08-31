@@ -1,5 +1,10 @@
 {
   "entity": {
+    "binary_sensor": {
+      "performance_warning": {
+        "default": "mdi:alert-circle-outline"
+      }
+    },
     "sensor": {
       "sync_state": {
         "default": "mdi:folder-sync"
@@ -15,6 +20,9 @@
       },
       "last_updated": {
         "default": "mdi:clock-check-outline"
+      },
+      "resilio_version": {
+        "default": "mdi:tag-outline"
       }
     }
   }

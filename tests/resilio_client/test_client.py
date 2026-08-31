@@ -62,6 +62,42 @@ async def test_async_get_os_success() -> None:
     assert await client.async_get_os() == {**MOCK_OS, "status": 200}
 
 
+async def test_async_get_app_info_success() -> None:
+    """App info hits the getappinfo WebUI action."""
+    payload = {"platform": "windows"}
+    client, session = build_client([token_response(), FakeResponse(json=webui_action(payload))])
+    assert await client.async_get_app_info() == {**payload, "status": 200}
+    action_call = next(call for call in session.calls if "token.html" not in call[0])
+    assert action_call[1]["action"] == "getappinfo"
+
+
+async def test_async_get_version_success() -> None:
+    """Version hits the version WebUI action."""
+    payload = {"value": "2.7.2.1370"}
+    client, session = build_client([token_response(), FakeResponse(json=webui_action(payload))])
+    assert await client.async_get_version() == {**payload, "status": 200}
+    action_call = next(call for call in session.calls if "token.html" not in call[0])
+    assert action_call[1]["action"] == "version"
+
+
+async def test_async_get_performance_warnings_success() -> None:
+    """Performance warnings hits the getperformancewarnings WebUI action."""
+    payload = {"warnings": []}
+    client, session = build_client([token_response(), FakeResponse(json=webui_action(payload))])
+    assert await client.async_get_performance_warnings() == {**payload, "status": 200}
+    action_call = next(call for call in session.calls if "token.html" not in call[0])
+    assert action_call[1]["action"] == "getperformancewarnings"
+
+
+async def test_async_get_statuses_success() -> None:
+    """Statuses hits the getstatuses WebUI action."""
+    payload = {"status_list": []}
+    client, session = build_client([token_response(), FakeResponse(json=webui_action(payload))])
+    assert await client.async_get_statuses() == {**payload, "status": 200}
+    action_call = next(call for call in session.calls if "token.html" not in call[0])
+    assert action_call[1]["action"] == "getstatuses"
+
+
 async def test_async_get_os_reuses_token() -> None:
     """A minted token is reused across calls instead of re-fetched every time."""
     client, session = build_client(

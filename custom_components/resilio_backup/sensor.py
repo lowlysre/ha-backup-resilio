@@ -160,6 +160,28 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
         return self.coordinator.data.last_success
 
 
+class ResilioVersionSensor(ResilioEntity, SensorEntity):
+    """Expose the Resilio Sync agent's own version."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "resilio_version"
+
+    def __init__(
+        self,
+        coordinator: ResilioDataUpdateCoordinator,
+        entry: ResilioConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_resilio_version"
+
+    @property
+    @override
+    def native_value(self) -> str | None:
+        """Return the Resilio Sync version, or None if the probe failed."""
+        return self.coordinator.data.resilio_version
+
+
 async def async_setup_entry(
     _hass: HomeAssistant,
     entry: ResilioConfigEntry,
@@ -175,5 +197,6 @@ async def async_setup_entry(
             ResilioPeerCountConnectedSensor(coordinator, entry),
             ResilioPeerCountTotalSensor(coordinator, entry),
             ResilioLastUpdatedSensor(coordinator, entry),
+            ResilioVersionSensor(coordinator, entry),
         ]
     )

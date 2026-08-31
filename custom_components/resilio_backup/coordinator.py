@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     ResilioApiClient,
+    ResilioApiError,
     ResilioAuthError,
     ResilioConnectionError,
     ResilioFolderNotFoundError,
@@ -51,6 +52,8 @@ class ResilioFolderStatus:
     peers_total: int
     state: str
     last_success: datetime = field(default_factory=dt_util.utcnow)
+    resilio_version: str | None = None
+    performance_warnings: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass
@@ -120,6 +123,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
 
         ir.async_delete_issue(self.hass, DOMAIN, self._folder_not_found_issue_id)
 
+        previous = self.data
         peers, peers_total = peer_counts(folder)
         status = ResilioFolderStatus(
             folder_id=str(folder.get("id", self._entry.data[CONF_FOLDER_ID])),
@@ -135,9 +139,40 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             peers_total=peers_total,
             state=derive_sync_state(folder),
             last_success=dt_util.utcnow(),
+            resilio_version=await self._async_get_resilio_version(previous),
+            performance_warnings=await self._async_get_performance_warnings(previous),
         )
         self._fire_change_events(status)
         return status
+
+    async def _async_get_resilio_version(
+        self, previous: ResilioFolderStatus | None
+    ) -> str | None:
+        """Fetch Resilio Sync's own version, falling back to the last known value.
+
+        Not fatal: an older Resilio agent that rejects this action shouldn't
+        take down the whole update, and a stale-but-known version is more
+        useful than blanking a diagnostic sensor on a single failed probe.
+        """
+        try:
+            payload = await self._client.async_get_version()
+        except ResilioApiError:
+            return previous.resilio_version if previous else None
+        value = payload.get("value")
+        return str(value) if value else (previous.resilio_version if previous else None)
+
+    async def _async_get_performance_warnings(
+        self, previous: ResilioFolderStatus | None
+    ) -> tuple[str, ...]:
+        """Fetch Resilio's own degraded-state warnings, same fallback rules as above."""
+        try:
+            payload = await self._client.async_get_performance_warnings()
+        except ResilioApiError:
+            return previous.performance_warnings if previous else ()
+        warnings = payload.get("warnings")
+        if not isinstance(warnings, list):
+            return previous.performance_warnings if previous else ()
+        return tuple(str(warning) for warning in warnings)
 
     def _fire_change_events(self, status: ResilioFolderStatus) -> None:
         """Fire logbook-visible events when peer or file counts change."""

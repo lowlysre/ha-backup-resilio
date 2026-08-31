@@ -7,7 +7,9 @@ from unittest.mock import patch
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
 
+from custom_components.resilio_backup.const import DATA_PENDING_LOCATIONS_CHECK
 from tests.common import MOCK_FOLDER, build_mock_entry, mock_token_endpoint, setup_integration
 
 
@@ -58,3 +60,38 @@ async def test_options_update_schedules_reload(hass) -> None:
         await hass.async_block_till_done()
 
     schedule_reload.assert_called_once_with(entry.entry_id)
+
+
+async def test_pending_locations_check_notifies_after_restart(hass, aioclient_mock) -> None:
+    """A pending flag left by a real reconfigure fires a reminder on next restart.
+
+    Only ``EVENT_HOMEASSISTANT_STARTED`` (a genuine full restart) should
+    trigger this, never a live config entry reload (lowlysre/ha-backup-resilio#30).
+    """
+    entry = await setup_integration(hass, aioclient_mock)
+    hass.config_entries.async_update_entry(
+        entry, data={**entry.data, DATA_PENDING_LOCATIONS_CHECK: True}
+    )
+
+    with patch(
+        "custom_components.resilio_backup.persistent_notification.async_create"
+    ) as notify:
+        hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
+        await hass.async_block_till_done()
+
+    notify.assert_called_once()
+    assert notify.call_args.kwargs["title"] == "Resilio Backup: check backup locations"
+    assert DATA_PENDING_LOCATIONS_CHECK not in entry.data
+
+
+async def test_pending_locations_check_noop_without_flag(hass, aioclient_mock) -> None:
+    """No reminder fires on restart when no reconfigure ever set the flag."""
+    await setup_integration(hass, aioclient_mock)
+
+    with patch(
+        "custom_components.resilio_backup.persistent_notification.async_create"
+    ) as notify:
+        hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
+        await hass.async_block_till_done()
+
+    notify.assert_not_called()

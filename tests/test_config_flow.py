@@ -23,6 +23,8 @@ from custom_components.resilio_backup.const import (
     CONF_FOLDER_ID,
     CONF_FOLDER_PATH,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_PEER_INVITE,
+    DATA_PENDING_LOCATIONS_CHECK,
     DOMAIN,
 )
 from tests.common import MOCK_FOLDER, MOCK_USER_INPUT, build_mock_entry
@@ -106,6 +108,22 @@ async def test_config_flow_create_new_folder(hass, mock_client) -> None:
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_FOLDER_ID] == "newfolder"
     mock_client.add_folder.assert_awaited_once_with("D:\\Sync\\Backups")
+
+
+async def test_config_flow_folder_options_show_state_and_peers(hass, mock_client) -> None:
+    """The folder picker labels show a sync-state symbol and peer counts."""
+    assert mock_client is not None
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], MOCK_USER_INPUT
+    )
+    assert result["step_id"] == "folder"
+
+    options = result["data_schema"].schema["folder_choice"].config["options"]
+    folder_option = next(opt for opt in options if opt["value"] == MOCK_FOLDER["id"])
+    assert folder_option["label"] == "\u2713 Home Assistant Backups (3/3 peers connected)"
 
 
 async def test_config_flow_cannot_connect(hass, mock_client) -> None:
@@ -462,6 +480,40 @@ async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client)
     assert "data:image/png;base64" not in message
 
 
+async def test_backup_path_send_peer_invite_defaults_true(hass, mock_client) -> None:
+    """The peer-invite checkbox defaults to on, preserving prior behavior."""
+    assert mock_client is not None
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    result = await flow.async_step_backup_path({})
+
+    invite_field = next(
+        key
+        for key in result["data_schema"].schema
+        if getattr(key, "schema", None) == CONF_SEND_PEER_INVITE
+    )
+    assert invite_field.default() is True
+
+
+async def test_backup_path_send_peer_invite_false_skips_notification(hass, mock_client) -> None:
+    """Unchecking the peer-invite box skips the notification even with a valid link."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with patch(
+        "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+    ) as notify:
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: False}
+        )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_not_called()
+    mock_client.get_share_link.assert_not_awaited()
+
+
 async def test_reauth_flow_updates_credentials(hass, mock_client) -> None:
     """Reauth validates and stores updated credentials, then reloads the entry."""
     assert mock_client is not None
@@ -580,6 +632,128 @@ async def test_reconfigure_flow_change_folder(hass, mock_client) -> None:
     assert entry.data[CONF_FOLDER_ID] == other_folder["id"]
     assert entry.data[CONF_FOLDER_PATH] == other_folder["path"]
     assert entry.data[CONF_BACKUP_PATH] == other_folder["path"]
+
+
+async def test_reconfigure_flow_reports_peer_invite_sent(hass, mock_client) -> None:
+    """The abort reason calls out the peer-invite notification when one was posted."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], MOCK_USER_INPUT)
+    assert result["step_id"] == "folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    with (
+        patch.object(hass.config_entries, "async_schedule_reload"),
+        patch(
+            "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+        ) as notify,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_BACKUP_PATH: MOCK_FOLDER["path"]}
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful_peer_invite"
+    # Peer-invite notification, plus the locations-reload warning since the
+    # backup path actually changed from the entry's original value.
+    assert notify.call_count == 2
+
+
+async def test_reconfigure_flow_unchanged_values_skips_reload(hass, mock_client) -> None:
+    """A same-values reconfigure resubmission doesn't force a config entry reload.
+
+    Prevents lowlysre/ha-backup-resilio#30: Home Assistant's backup manager
+    can lose track of this integration's backup agent across an unload/setup
+    cycle, and a same-values reconfigure has no reason to trigger one.
+    """
+    assert mock_client is not None
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+    original_backup_path = entry.data[CONF_BACKUP_PATH]
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], MOCK_USER_INPUT)
+    assert result["step_id"] == "folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    # Re-submitting the existing (mismatched) backup path warns once...
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_BACKUP_PATH: original_backup_path, CONF_SEND_PEER_INVITE: False},
+    )
+    assert result["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    # ...and confirms on a repeat submission, with nothing actually changed.
+    with patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload:
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_BACKUP_PATH: original_backup_path, CONF_SEND_PEER_INVITE: False},
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    schedule_reload.assert_not_called()
+    assert DATA_PENDING_LOCATIONS_CHECK not in entry.data
+
+
+async def test_reconfigure_flow_real_change_warns_about_locations(hass, mock_client) -> None:
+    """A real value change sets the pending-locations flag and warns immediately."""
+    assert mock_client is not None
+    entry = build_mock_entry(hass)
+    entry.add_to_hass(hass)
+    original_backup_path = entry.data[CONF_BACKUP_PATH]
+
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {**MOCK_USER_INPUT, "host": "new-resilio.local"}
+    )
+    assert result["step_id"] == "folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_BACKUP_PATH: original_backup_path, CONF_SEND_PEER_INVITE: False},
+    )
+    assert result["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    with (
+        patch.object(hass.config_entries, "async_schedule_reload") as schedule_reload,
+        patch(
+            "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+        ) as notify,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_BACKUP_PATH: original_backup_path, CONF_SEND_PEER_INVITE: False},
+        )
+        await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    schedule_reload.assert_called_once_with(entry.entry_id)
+    assert entry.data[DATA_PENDING_LOCATIONS_CHECK] is True
+    notify.assert_called_once()
+    assert (
+        notify.call_args.kwargs["title"]
+        == "Resilio Backup: restart required for backup locations"
+    )
 
 
 async def test_reconfigure_flow_already_configured(hass, mock_client) -> None:

@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Questo endpoint Resilio è già configurato.",
       "reauth_successful": "Riautenticazione riuscita.",
-      "reconfigure_successful": "Riconfigurazione riuscita."
+      "reconfigure_successful": "Riconfigurazione riuscita.",
+      "reconfigure_successful_peer_invite": "Riconfigurazione riuscita. Controlla le notifiche per il link di invito peer e il codice QR."
     },
     "error": {
       "cannot_connect": "Connessione all'API Resilio non riuscita.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Percorso di backup"
+          "backup_path": "Percorso di backup",
+          "send_peer_invite": "Invia una notifica di invito peer"
+        },
+        "data_description": {
+          "send_peer_invite": "Aggiunge una notifica con un link di invito e un codice QR per questa cartella. Chiunque abbia il link può unirsi come peer, quindi disattivalo se hai già aggiunto i peer di cui hai bisogno."
         },
         "description": "Questo è il percorso locale in cui Home Assistant scrive i file `.tar`/`.json` di ogni backup. Resilio replica quindi tutto ciò che trova nella propria cartella sugli altri dispositivi, quindi questo percorso dovrebbe normalmente essere il percorso proprio della cartella Resilio (precompilato di seguito) o una posizione al suo interno.\n\nCartella selezionata: **{folder_name}** ({folder_path})",
         "title": "Scegli il percorso di backup"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Connettività"
+      },
+      "performance_warning": {
+        "name": "Avviso di prestazioni"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Peer configurati"
+      },
+      "resilio_version": {
+        "name": "Versione di Resilio Sync"
       },
       "sync_state": {
         "name": "Stato sincronizzazione",
