@@ -19,6 +19,23 @@ from .const import CONF_FOLDER_ID, SCAN_INTERVAL
 LOGGER = logging.getLogger(__name__)
 
 
+def _safe_int(value: object, default: int = 0) -> int:
+    """Coerce a Resilio field to an int, tolerating shapes the WebUI API doesn't document.
+
+    The `/gui/` action API isn't documented, so a field observed as a scalar in one
+    Resilio version can turn out to be a list (e.g. `peers` listing peer objects
+    instead of a count) in another. Falling back to `len()` for list/tuple values,
+    and to `default` for anything else that doesn't cleanly convert, keeps a single
+    unexpected shape from crashing the whole coordinator refresh.
+    """
+    if isinstance(value, (list, tuple)):
+        return len(value)
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+
+
 @dataclass(frozen=True, kw_only=True)
 class ResilioFolderStatus:
     """Normalized folder status from the Resilio API."""
@@ -72,8 +89,8 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
                 or self._entry.data[CONF_FOLDER_ID]
             ),
             path=str(folder.get("path", "")),
-            size=int(folder.get("size", 0)),
-            files=int(folder.get("files", 0)),
-            peers=int(folder.get("peers", 0)),
+            size=_safe_int(folder.get("size")),
+            files=_safe_int(folder.get("files")),
+            peers=_safe_int(folder.get("peers")),
             state=str(folder.get("state", "unknown")).lower(),
         )

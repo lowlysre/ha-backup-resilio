@@ -50,11 +50,12 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
     assert result["step_id"] == "folder"
 
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            "folder_choice": MOCK_FOLDER["id"],
-            CONF_BACKUP_PATH: "C:\\HA\\Backups",
-        },
+        result["flow_id"], {"folder_choice": MOCK_FOLDER["id"]}
+    )
+    assert result["step_id"] == "backup_path"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BACKUP_PATH: "C:\\HA\\Backups"}
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -76,12 +77,17 @@ async def test_config_flow_create_new_folder(hass, mock_client) -> None:
         result["flow_id"], MOCK_USER_INPUT
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            "folder_choice": CREATE_NEW_VALUE,
-            "new_folder_path": "D:\\Sync\\Backups",
-            CONF_BACKUP_PATH: "D:\\Sync\\Backups",
-        },
+        result["flow_id"], {"folder_choice": CREATE_NEW_VALUE}
+    )
+    assert result["step_id"] == "new_folder"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"new_folder_path": "D:\\Sync\\Backups"}
+    )
+    assert result["step_id"] == "backup_path"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BACKUP_PATH: "D:\\Sync\\Backups"}
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -219,7 +225,8 @@ async def test_folder_step_requires_backup_path(hass, mock_client) -> None:
     await hass.config_entries.flow.async_configure(result["flow_id"], MOCK_USER_INPUT)
 
     flow = build_flow(hass)
-    result = await flow.async_step_folder({"folder_choice": MOCK_FOLDER["id"]})
+    setattr(flow, "_folder", MOCK_FOLDER)
+    result = await flow.async_step_backup_path({})
 
     assert result["errors"] == {"backup_path": "required"}
     backup_field = next(
@@ -233,9 +240,7 @@ async def test_folder_step_requires_new_folder_path(hass, mock_client) -> None:
     assert mock_client is not None
     flow = build_flow(hass)
 
-    result = await flow.async_step_folder(
-        {"folder_choice": CREATE_NEW_VALUE, "backup_path": "C:\\HA\\Backups"}
-    )
+    result = await flow.async_step_new_folder({})
 
     assert result["errors"] == {"new_folder_path": "required"}
 
@@ -245,9 +250,7 @@ async def test_folder_step_invalid_existing_choice(hass, mock_client) -> None:
     assert mock_client is not None
     flow = build_flow(hass)
 
-    result = await flow.async_step_folder(
-        {"folder_choice": "missing", "backup_path": "C:\\HA\\Backups"}
-    )
+    result = await flow.async_step_folder({"folder_choice": "missing"})
 
     assert result["errors"] == {"base": "no_folders"}
 
@@ -265,12 +268,6 @@ async def test_folder_step_create_new_errors(hass, mock_client, side_effect, exp
     mock_client.add_folder.side_effect = side_effect
     flow = build_flow(hass)
 
-    result = await flow.async_step_folder(
-        {
-            "folder_choice": CREATE_NEW_VALUE,
-            "new_folder_path": "D:\\Sync\\Backups",
-            "backup_path": "D:\\Sync\\Backups",
-        }
-    )
+    result = await flow.async_step_new_folder({"new_folder_path": "D:\\Sync\\Backups"})
 
     assert result["errors"] == {"base": expected_error}

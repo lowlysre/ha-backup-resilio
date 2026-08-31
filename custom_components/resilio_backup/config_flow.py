@@ -56,6 +56,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the config flow."""
         self._data: dict[str, Any] = {}
+        self._folder: dict[str, Any] = {}
 
     def _get_client(self) -> ResilioApiClient:
         """Build the API client from stored data."""
@@ -89,34 +90,6 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return [], {"base": "cannot_connect"}
         except ResilioApiError:
             return [], {"base": "unknown"}
-
-    async def _async_resolve_folder_selection(
-        self,
-        user_input: dict[str, Any],
-        folder_lookup: dict[str, dict[str, Any]],
-        errors: dict[str, str],
-    ) -> dict[str, Any] | None:
-        """Resolve the selected folder from user input."""
-        if user_input[CONF_FOLDER_CHOICE] != CREATE_NEW_VALUE:
-            selected_folder = folder_lookup.get(user_input[CONF_FOLDER_CHOICE])
-            if selected_folder is None:
-                errors["base"] = "no_folders"
-            return selected_folder
-
-        new_folder_path = str(user_input.get(CONF_NEW_FOLDER_PATH, "")).strip()
-        if not new_folder_path:
-            errors[CONF_NEW_FOLDER_PATH] = "required"
-            return None
-
-        try:
-            return await self._get_client().async_add_folder(new_folder_path)
-        except ResilioAuthError:
-            errors["base"] = "invalid_auth"
-        except ResilioConnectionError:
-            errors["base"] = "cannot_connect"
-        except ResilioApiError:
-            errors["base"] = "unknown"
-        return None
 
     @override
     async def async_step_user(
@@ -186,53 +159,26 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_folder(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Choose or create the Resilio folder."""
+        """Choose an existing Resilio folder or start creating one."""
         folders, errors = await self._async_get_folders()
-
         folder_lookup = {str(folder["id"]): folder for folder in folders if "id" in folder}
 
         if user_input is not None:
-            backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
-            if not backup_path:
-                errors[CONF_BACKUP_PATH] = "required"
+            choice = user_input[CONF_FOLDER_CHOICE]
+            if choice == CREATE_NEW_VALUE:
+                return await self.async_step_new_folder()
 
-            selected_folder = None
-            if CONF_BACKUP_PATH not in errors:
-                selected_folder = await self._async_resolve_folder_selection(
-                    user_input, folder_lookup, errors
-                )
-
-            if not errors and selected_folder is not None:
-                return self.async_create_entry(
-                    title=f"Resilio Sync ({self._data[CONF_HOST]})",
-                    data={
-                        **self._data,
-                        CONF_FOLDER_ID: str(selected_folder["id"]),
-                        CONF_FOLDER_PATH: str(selected_folder.get("path", "")),
-                        CONF_BACKUP_PATH: backup_path,
-                    },
-                )
+            selected_folder = folder_lookup.get(choice)
+            if selected_folder is None:
+                errors["base"] = "no_folders"
+            else:
+                self._folder = selected_folder
+                return await self.async_step_backup_path()
 
         if not folders and user_input is None and not errors:
             errors["base"] = "no_folders"
 
-        selected_folder_id = (
-            user_input.get(CONF_FOLDER_CHOICE) if user_input is not None else None
-        )
-        selected_folder = folder_lookup.get(str(selected_folder_id))
-        backup_path_default = ""
-        if user_input is not None:
-            backup_path_default = str(
-                user_input.get(
-                    CONF_BACKUP_PATH,
-                    selected_folder.get("path", "") if selected_folder else "",
-                )
-            )
-        folder_choice_default = (
-            selected_folder_id
-            if selected_folder_id is not None
-            else CREATE_NEW_VALUE if not folders else next(iter(folder_lookup), None)
-        )
+        folder_choice_default = CREATE_NEW_VALUE if not folders else next(iter(folder_lookup))
 
         return self.async_show_form(
             step_id="folder",
@@ -264,15 +210,68 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     ),
-                    vol.Optional(
-                        CONF_NEW_FOLDER_PATH,
-                        default=(
-                            str(user_input.get(CONF_NEW_FOLDER_PATH, ""))
-                            if user_input is not None
-                            else ""
-                        ),
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_new_folder(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Create a new Resilio folder from a path."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            new_folder_path = str(user_input.get(CONF_NEW_FOLDER_PATH, "")).strip()
+            if not new_folder_path:
+                errors[CONF_NEW_FOLDER_PATH] = "required"
+            else:
+                try:
+                    self._folder = await self._get_client().async_add_folder(new_folder_path)
+                except ResilioAuthError:
+                    errors["base"] = "invalid_auth"
+                except ResilioConnectionError:
+                    errors["base"] = "cannot_connect"
+                except ResilioApiError:
+                    errors["base"] = "unknown"
+                else:
+                    return await self.async_step_backup_path()
+
+        return self.async_show_form(
+            step_id="new_folder",
+            data_schema=vol.Schema({vol.Required(CONF_NEW_FOLDER_PATH): str}),
+            errors=errors,
+        )
+
+    async def async_step_backup_path(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose where backups are staged before syncing to the folder."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
+            if not backup_path:
+                errors[CONF_BACKUP_PATH] = "required"
+            else:
+                return self.async_create_entry(
+                    title=f"Resilio Sync ({self._data[CONF_HOST]})",
+                    data={
+                        **self._data,
+                        CONF_FOLDER_ID: str(self._folder["id"]),
+                        CONF_FOLDER_PATH: str(self._folder.get("path", "")),
+                        CONF_BACKUP_PATH: backup_path,
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="backup_path",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_BACKUP_PATH,
+                        default=str(self._folder.get("path", "")),
                     ): str,
-                    vol.Required(CONF_BACKUP_PATH, default=backup_path_default): str,
                 }
             ),
             errors=errors,

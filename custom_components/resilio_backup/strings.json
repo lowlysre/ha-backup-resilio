@@ -10,14 +10,26 @@
       "unknown": "Unexpected error."
     },
     "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Backup path"
+        },
+        "description": "Confirm the local path Home Assistant writes backups into before they sync to the Resilio folder.",
+        "title": "Choose backup path"
+      },
       "folder": {
         "data": {
-          "backup_path": "Backup path",
-          "folder_choice": "Resilio folder",
+          "folder_choice": "Resilio folder"
+        },
+        "description": "Pick an existing Resilio folder, or choose \"Create a new folder\" to add one.",
+        "title": "Choose backup folder"
+      },
+      "new_folder": {
+        "data": {
           "new_folder_path": "New folder path"
         },
-        "description": "Pick an existing Resilio folder or add a new one, then confirm the local path Home Assistant writes backups into.",
-        "title": "Choose backup folder"
+        "description": "Enter the path for the new Resilio folder.",
+        "title": "Create a new folder"
       },
       "user": {
         "data": {
