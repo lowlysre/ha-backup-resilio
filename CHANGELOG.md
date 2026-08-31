@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom icons for the peer count, file count, and sync state sensors.
 - Config flow now explains what the backup path and Resilio folder are for,
   warns (without blocking) when the entered backup path doesn't match the
-  selected Resilio folder's own path, and posts a peer-invite link (with a
-  QR code) as a persistent notification once the entry is created.
+  selected Resilio folder's own path, and offers to post a peer-invite link
+  (with a QR code) as a persistent notification once the entry is created.
+- A "Send a peer-invite notification" checkbox on the backup path step (on by
+  default), so you can skip minting a peer-invite link and QR code on entries
+  where you don't want an active invite lying around in notifications.
 - `scan_interval` option to configure how often the coordinator polls the Resilio Sync API (default 300s, minimum 10s).
 - Reauthentication flow, triggered when Resilio rejects the configured credentials.
 - Reconfigure flow to update connection details without removing and re-adding the integration.
@@ -21,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `quality_scale.yaml` self-assessment tracking this integration's alignment with Home Assistant's Integration Quality Scale.
 - A repair issue when the configured Resilio folder is missing or renamed, since retrying the poll won't fix it.
 - Standalone `resilio-client` CLI (`resilio_client/`) exposing the Resilio WebUI client's `status`/`folders`/`add-folder`/`share-link` operations with no Home Assistant dependency, plus a CI job that runs it against a live `resilio/sync` container on every PR.
+- Diagnostics now include live WebUI health probes (`version`, `getappinfo`, `getperformancewarnings`, `getstatuses`) captured at report time, independent of the coordinator's cached data, so a failing coordinator still surfaces why.
+- The config flow's folder picker now shows each folder's sync-state symbol and connected/total peer counts (e.g. "✓ Backups (2/3 peers connected)"), so you can tell folders apart without opening the Resilio WebUI.
 
 ### Changed
 
@@ -31,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Sensors and the binary sensor now declare `PARALLEL_UPDATES = 0` since they're coordinator-backed and read-only.
 - Authentication failures now raise `ConfigEntryAuthFailed` instead of a generic update failure, so Home Assistant prompts for reauthentication.
+- Reconfiguring with unchanged values no longer forces a config entry reload. Home Assistant's backup manager can lose track of this integration's backup agent across that reload's unload/setup window, leaving it stuck under "Unavailable locations" in Settings > Backups until a full restart.
+- A reconfigure that does change connection details, folder, or backup path can't skip that reload, so it now warns immediately that Resilio Backup may briefly disappear from Backup Locations, and posts a second reminder to check Locations after your next full Home Assistant restart.
 
 ## [0.1.0] - 2026-08-30
 

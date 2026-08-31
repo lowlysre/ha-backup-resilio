@@ -37,17 +37,21 @@ from .const import (
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
     CONF_SCAN_INTERVAL,
+    CONF_SEND_PEER_INVITE,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
+    DATA_PENDING_LOCATIONS_CHECK,
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
     DEFAULT_PRUNE_ENABLED,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SEND_PEER_INVITE,
     DEFAULT_USE_SSL,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
     MIN_SCAN_INTERVAL,
 )
+from .folder_state import derive_sync_state, peer_counts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +74,24 @@ def _render_qr_data_uri(link: str) -> str:
 CONF_FOLDER_CHOICE = "folder_choice"
 CONF_NEW_FOLDER_PATH = "new_folder_path"
 CREATE_NEW_VALUE = "__create_new__"
+
+# Plain Unicode symbols (not colorful emoji) prefixed to each folder option's
+# label, so the sync state is visible without opening the folder.
+_SYNC_STATE_SYMBOLS = {
+    "in_sync": "\u2713",  # check mark
+    "syncing": "\u21bb",  # clockwise open circle arrow
+    "paused": "\u23f8",  # pause symbol
+    "error": "\u2717",  # ballot x
+    "unknown": "?",
+}
+
+
+def _folder_option_label(folder: dict[str, Any]) -> str:
+    """Build a folder picker label with sync state, connected/total peers."""
+    name = str(folder.get("name") or folder.get("path") or folder.get("id"))
+    symbol = _SYNC_STATE_SYMBOLS[derive_sync_state(folder)]
+    connected, total = peer_counts(folder)
+    return f"{symbol} {name} ({connected}/{total} peers connected)"
 
 
 def _strip_url_scheme(host: str) -> str:
@@ -318,11 +340,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 *[
                                     SelectOptionDict(
                                         value=str(folder["id"]),
-                                        label=str(
-                                            folder.get("name")
-                                            or folder.get("path")
-                                            or folder["id"]
-                                        ),
+                                        label=_folder_option_label(folder),
                                     )
                                     for folder in folders
                                     if "id" in folder
@@ -388,6 +406,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
+            send_peer_invite = bool(
+                user_input.get(CONF_SEND_PEER_INVITE, DEFAULT_SEND_PEER_INVITE)
+            )
             if not backup_path:
                 errors[CONF_BACKUP_PATH] = "required"
             elif (
@@ -401,7 +422,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._pending_backup_path = backup_path
                 errors[CONF_BACKUP_PATH] = "path_mismatch"
             else:
-                await self._async_notify_peer_invite()
+                peer_invite_sent = (
+                    await self._async_notify_peer_invite() if send_peer_invite else False
+                )
                 final_data = {
                     **self._data,
                     CONF_FOLDER_ID: str(self._folder["id"]),
@@ -409,10 +432,38 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_BACKUP_PATH: backup_path,
                 }
                 if self.source == config_entries.SOURCE_RECONFIGURE:
+                    reconfigure_entry = self._get_reconfigure_entry()
+                    connection_changed = {
+                        key: value
+                        for key, value in final_data.items()
+                        if key != DATA_PENDING_LOCATIONS_CHECK
+                    } != {
+                        key: value
+                        for key, value in reconfigure_entry.data.items()
+                        if key != DATA_PENDING_LOCATIONS_CHECK
+                    }
+                    if connection_changed:
+                        final_data[DATA_PENDING_LOCATIONS_CHECK] = True
+                        self._notify_locations_reload()
                     return self.async_update_reload_and_abort(
-                        self._get_reconfigure_entry(),
+                        reconfigure_entry,
                         unique_id=f"{self._data[CONF_HOST]}:{self._data[CONF_PORT]}",
                         data=final_data,
+                        reason=(
+                            "reconfigure_successful_peer_invite"
+                            if peer_invite_sent
+                            else "reconfigure_successful"
+                        ),
+                        # A same-data reconfigure still forces an unload/setup
+                        # cycle by default, and HA's backup manager can lose
+                        # track of our agent across that unload window (see
+                        # lowlysre/ha-backup-resilio#30): it shows up under
+                        # "Unavailable locations" until a full HA restart.
+                        # Skipping the reload when nothing actually changed
+                        # avoids that window entirely. A real value change
+                        # still needs the reload, so the notifications above
+                        # cover that case instead.
+                        reload_even_if_entry_is_unchanged=False,
                     )
                 return self.async_create_entry(
                     title=f"Resilio Sync ({self._data[CONF_HOST]})",
@@ -429,6 +480,12 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         or existing_backup_path
                         or folder_path,
                     ): str,
+                    vol.Required(
+                        CONF_SEND_PEER_INVITE,
+                        default=(user_input or {}).get(
+                            CONF_SEND_PEER_INVITE, DEFAULT_SEND_PEER_INVITE
+                        ),
+                    ): bool,
                 }
             ),
             errors=errors,
@@ -438,12 +495,14 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def _async_notify_peer_invite(self) -> None:
+    async def _async_notify_peer_invite(self) -> bool:
         """Best-effort: post a notification with a peer-invite link for the folder.
 
         Not fatal if Resilio can't produce one (unlicensed agents, in
         particular, silently return an empty link for some folder/permission
-        combinations); the config entry is created either way.
+        combinations); the config entry is created either way. Returns
+        whether a notification was actually created, so callers can tailor
+        their follow-up messaging.
         """
         try:
             link = await self._get_client().async_get_share_link(
@@ -451,10 +510,10 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         except ResilioApiError:
             LOGGER.debug("Could not generate a Resilio peer-invite link", exc_info=True)
-            return
+            return False
 
         if not link:
-            return
+            return False
 
         message = (
             "Share this link with another device to add it as a peer for "
@@ -474,6 +533,31 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             message,
             title="Resilio Backup: invite a peer",
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
+        )
+        return True
+
+    def _notify_locations_reload(self) -> None:
+        """Warn that a reload can briefly drop this integration from backup Locations.
+
+        Home Assistant's backup manager rebuilds its whole agent list on
+        every unload/setup cycle, and this integration's agent can lose its
+        slot in that window (lowlysre/ha-backup-resilio#30). A same-values
+        reconfigure skips the reload entirely (see
+        ``reload_even_if_entry_is_unchanged=False`` above), but a real value
+        change still needs it, so warn now and again after the next restart
+        (``_async_handle_pending_locations_check`` in ``__init__.py``).
+        """
+        persistent_notification.async_create(
+            self.hass,
+            (
+                "Home Assistant needs to reload Resilio Backup for this "
+                "change, and it can briefly disappear from Settings > "
+                "Backups > Locations while that happens. You'll get a "
+                "reminder to check Locations after your next full Home "
+                "Assistant restart."
+            ),
+            title="Resilio Backup: restart required for backup locations",
+            notification_id=f"{DOMAIN}_locations_reload_{self._get_reconfigure_entry().entry_id}",
         )
 
 

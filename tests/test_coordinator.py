@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from custom_components.resilio_backup.api import (
+    ResilioApiError,
     ResilioAuthError,
     ResilioConnectionError,
     ResilioFolderNotFoundError,
@@ -302,3 +303,69 @@ async def test_file_count_change_fires_event(hass) -> None:
         "previous": 16,
         "current": 20,
     }
+
+
+async def test_coordinator_fetches_version_and_performance_warnings(hass) -> None:
+    """A successful poll surfaces Resilio's own version and warning list."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    client.async_get_version.return_value = {"value": "2.7.2.1370"}
+    client.async_get_performance_warnings.return_value = {"warnings": ["Low disk space"]}
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    data = await coordinator.async_test_update()
+
+    assert data.resilio_version == "2.7.2.1370"
+    assert data.performance_warnings == ("Low disk space",)
+
+
+async def test_coordinator_falls_back_to_previous_version_on_probe_failure(hass) -> None:
+    """A failed version probe keeps the last known value instead of blanking it.
+
+    Prevents a diagnostic sensor from flapping to unknown on a single
+    transient failure of an otherwise-healthy poll.
+    """
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    client.async_get_version.return_value = {"value": "2.7.2.1370"}
+    client.async_get_performance_warnings.return_value = {"warnings": []}
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    coordinator.data = await coordinator.async_test_update()
+
+    client.async_get_version.side_effect = ResilioApiError("unsupported action")
+    data = await coordinator.async_test_update()
+
+    assert data.resilio_version == "2.7.2.1370"
+
+
+async def test_coordinator_falls_back_to_previous_warnings_on_probe_failure(hass) -> None:
+    """A failed performance-warnings probe keeps the last known warnings."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    client.async_get_version.return_value = {"value": "2.7.2.1370"}
+    client.async_get_performance_warnings.return_value = {"warnings": ["Low disk space"]}
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+    coordinator.data = await coordinator.async_test_update()
+
+    client.async_get_performance_warnings.side_effect = ResilioApiError("unsupported action")
+    data = await coordinator.async_test_update()
+
+    assert data.performance_warnings == ("Low disk space",)
+
+
+async def test_coordinator_version_and_warnings_default_none_on_first_failure(hass) -> None:
+    """With no previous data, a failed probe has nothing to fall back to."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = MOCK_FOLDER
+    client.async_get_version.side_effect = ResilioApiError("unsupported action")
+    client.async_get_performance_warnings.side_effect = ResilioApiError("unsupported action")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    data = await coordinator.async_test_update()
+
+    assert data.resilio_version is None
+    assert data.performance_warnings == ()

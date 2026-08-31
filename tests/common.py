@@ -146,6 +146,16 @@ async def setup_integration(hass, aioclient_mock, **entry_overrides) -> MockConf
         params={"action": "getsyncfolders"},
         json=webui_action({"folders": [MOCK_FOLDER]}),
     )
+    aioclient_mock.get(
+        f"{base_url}/",
+        params={"action": "version"},
+        json=webui_action({"value": "2.7.2.1370"}),
+    )
+    aioclient_mock.get(
+        f"{base_url}/",
+        params={"action": "getperformancewarnings"},
+        json=webui_action({"warnings": []}),
+    )
 
     assert await async_setup_component(hass, DOMAIN, {})
     await hass.async_block_till_done()

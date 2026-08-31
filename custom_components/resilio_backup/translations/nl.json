@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Dit Resilio-eindpunt is al geconfigureerd.",
       "reauth_successful": "Opnieuw authenticeren is gelukt.",
-      "reconfigure_successful": "Herconfigureren is gelukt."
+      "reconfigure_successful": "Herconfigureren is gelukt.",
+      "reconfigure_successful_peer_invite": "Herconfigureren is gelukt. Bekijk je meldingen voor de peer-uitnodigingslink en de QR-code."
     },
     "error": {
       "cannot_connect": "Kan geen verbinding maken met de Resilio-API.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Back-uppad"
+          "backup_path": "Back-uppad",
+          "send_peer_invite": "Een peer-uitnodigingsmelding verzenden"
+        },
+        "data_description": {
+          "send_peer_invite": "Voegt een melding toe met een deelnamelink en QR-code voor deze map. Iedereen met de link kan als peer deelnemen, dus schakel dit uit als je al alle peers hebt toegevoegd die je nodig hebt."
         },
         "description": "Dit is het lokale pad waarnaar Home Assistant de `.tar`/`.json`-bestanden van elke back-up schrijft. Resilio repliceert vervolgens alles wat het in zijn eigen map vindt naar je andere apparaten, dus dit pad moet normaal gesproken het eigen pad van de Resilio-map zijn (hieronder vooraf ingevuld) of een locatie daarbinnen.\n\nGeselecteerde map: **{folder_name}** ({folder_path})",
         "title": "Back-uppad kiezen"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Connectiviteit"
+      },
+      "performance_warning": {
+        "name": "Prestatiewaarschuwing"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Geconfigureerde peers"
+      },
+      "resilio_version": {
+        "name": "Resilio Sync-versie"
       },
       "sync_state": {
         "name": "Synchronisatiestatus",
