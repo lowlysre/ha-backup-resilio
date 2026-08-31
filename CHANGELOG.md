@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Custom icons for the peer count, file count, and sync state sensors.
+- Config flow now explains what the backup path and Resilio folder are for,
+  warns (without blocking) when the entered backup path doesn't match the
+  selected Resilio folder's own path, and posts a peer-invite link as a
+  persistent notification once the entry is created.
 
 ## [0.1.0] - 2026-08-30
 

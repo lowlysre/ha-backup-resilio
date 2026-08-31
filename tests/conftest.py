@@ -99,10 +99,14 @@ def mock_client() -> Generator[SimpleNamespace]:
         patch.object(
             ResilioApiClient, "async_get_folder", AsyncMock(return_value=MOCK_FOLDER)
         ) as get_folder,
+        patch.object(
+            ResilioApiClient, "async_get_share_link", AsyncMock(return_value="")
+        ) as get_share_link,
     ):
         yield SimpleNamespace(
             get_os=get_os,
             get_folders=get_folders,
             add_folder=add_folder,
             get_folder=get_folder,
+            get_share_link=get_share_link,
         )

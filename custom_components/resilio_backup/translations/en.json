@@ -7,6 +7,7 @@
       "cannot_connect": "Failed to connect to the Resilio API.",
       "invalid_auth": "The Resilio credentials were rejected.",
       "no_folders": "No Resilio folders are available yet. Pick \"Create a new folder\" to continue.",
+      "path_mismatch": "This path doesn't match the Resilio folder's own path, so backups written here won't replicate to peers. Submit again to use it anyway.",
       "unknown": "Unexpected error."
     },
     "step": {
@@ -14,14 +15,14 @@
         "data": {
           "backup_path": "Backup path"
         },
-        "description": "Confirm the local path Home Assistant writes backups into before they sync to the Resilio folder.",
+        "description": "This is the local path Home Assistant writes each backup's `.tar`/`.json` files into. Resilio then replicates whatever it finds inside its own folder to your other devices, so this path should normally be the Resilio folder's own path (pre-filled below) or a location inside it.",
         "title": "Choose backup path"
       },
       "folder": {
         "data": {
           "folder_choice": "Resilio folder"
         },
-        "description": "Pick an existing Resilio folder, or choose \"Create a new folder\" to add one.",
+        "description": "This is the Resilio Sync folder that actually replicates your backups to other devices. Pick an existing one, or choose \"Create a new folder\" to add one.",
         "title": "Choose backup folder"
       },
       "new_folder": {

@@ -8,6 +8,7 @@ from typing import Any, Self, override
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
@@ -57,6 +58,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._data: dict[str, Any] = {}
         self._folder: dict[str, Any] = {}
+        self._pending_backup_path: str | None = None
 
     def _get_client(self) -> ResilioApiClient:
         """Build the API client from stored data."""
@@ -248,18 +250,30 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Choose where backups are staged before syncing to the folder."""
         errors: dict[str, str] = {}
+        folder_path = str(self._folder.get("path", ""))
 
         if user_input is not None:
             backup_path = str(user_input.get(CONF_BACKUP_PATH, "")).strip()
             if not backup_path:
                 errors[CONF_BACKUP_PATH] = "required"
+            elif (
+                folder_path
+                and backup_path != folder_path
+                and backup_path != self._pending_backup_path
+            ):
+                # Backups written outside the synced folder won't actually
+                # replicate to peers. Warn instead of blocking: remember
+                # this value so a repeat submission is treated as confirmed.
+                self._pending_backup_path = backup_path
+                errors[CONF_BACKUP_PATH] = "path_mismatch"
             else:
+                await self._async_notify_peer_invite()
                 return self.async_create_entry(
                     title=f"Resilio Sync ({self._data[CONF_HOST]})",
                     data={
                         **self._data,
                         CONF_FOLDER_ID: str(self._folder["id"]),
-                        CONF_FOLDER_PATH: str(self._folder.get("path", "")),
+                        CONF_FOLDER_PATH: folder_path,
                         CONF_BACKUP_PATH: backup_path,
                     },
                 )
@@ -270,11 +284,39 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(
                         CONF_BACKUP_PATH,
-                        default=str(self._folder.get("path", "")),
+                        default=(user_input or {}).get(CONF_BACKUP_PATH) or folder_path,
                     ): str,
                 }
             ),
             errors=errors,
+        )
+
+    async def _async_notify_peer_invite(self) -> None:
+        """Best-effort: post a notification with a peer-invite link for the folder.
+
+        Not fatal if Resilio can't produce one (unlicensed agents, in
+        particular, silently return an empty link for some folder/permission
+        combinations); the config entry is created either way.
+        """
+        try:
+            link = await self._get_client().async_get_share_link(
+                str(self._folder["id"]), str(self._folder.get("name") or "Resilio Backups")
+            )
+        except ResilioApiError:
+            LOGGER.debug("Could not generate a Resilio peer-invite link", exc_info=True)
+            return
+
+        if not link:
+            return
+
+        persistent_notification.async_create(
+            self.hass,
+            (
+                "Share this link with another device to add it as a peer for "
+                f"your Resilio Backup folder:\n\n{link}"
+            ),
+            title="Resilio Backup: invite a peer",
+            notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
         )
 
 
