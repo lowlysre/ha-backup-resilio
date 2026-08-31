@@ -1,0 +1,36 @@
+name: Translation issue
+description: Report an incorrect or awkward translation string
+labels:
+  - translation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Non-English translations in this repo are AI-generated and unreviewed by native speakers, so mistakes are expected. Corrections are welcome.
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: The translation file this affects, e.g. `de`, `fr`, `es`
+      placeholder: de
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current string
+      description: Paste the incorrect string, and the key it's under in `translations/<locale>.json` if you know it
+    validations:
+      required: true
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested correction
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+    validations:
+      required: false

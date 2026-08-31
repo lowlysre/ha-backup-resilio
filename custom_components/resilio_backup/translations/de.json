@@ -1,0 +1,147 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Dieser Resilio-Endpunkt ist bereits konfiguriert.",
+      "reauth_successful": "Erneute Authentifizierung erfolgreich.",
+      "reconfigure_successful": "Neukonfiguration erfolgreich."
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Resilio-API fehlgeschlagen.",
+      "invalid_auth": "Die Resilio-Zugangsdaten wurden abgelehnt.",
+      "no_folders": "Es sind noch keine Resilio-Ordner verfügbar. Wähle \"Neuen Ordner erstellen\", um fortzufahren.",
+      "path_mismatch": "Dieser Pfad stimmt nicht mit dem eigenen Pfad des Resilio-Ordners überein, daher werden hier geschriebene Backups nicht zu Peers repliziert. Erneut senden, um ihn trotzdem zu verwenden.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "step": {
+      "backup_path": {
+        "data": {
+          "backup_path": "Backup-Pfad"
+        },
+        "description": "Dies ist der lokale Pfad, in den Home Assistant die `.tar`/`.json`-Dateien jedes Backups schreibt. Resilio repliziert dann alles, was sich in seinem eigenen Ordner befindet, auf deine anderen Geräte. Dieser Pfad sollte daher normalerweise der eigene Pfad des Resilio-Ordners sein (unten vorausgefüllt) oder sich innerhalb davon befinden.",
+        "title": "Backup-Pfad wählen"
+      },
+      "folder": {
+        "data": {
+          "folder_choice": "Resilio-Ordner"
+        },
+        "description": "Dies ist der Resilio-Sync-Ordner, der deine Backups tatsächlich auf andere Geräte repliziert. Wähle einen bestehenden aus oder wähle \"Neuen Ordner erstellen\", um einen hinzuzufügen.",
+        "title": "Backup-Ordner wählen"
+      },
+      "new_folder": {
+        "data": {
+          "new_folder_path": "Pfad des neuen Ordners"
+        },
+        "description": "Gib den Pfad für den neuen Resilio-Ordner ein.",
+        "title": "Neuen Ordner erstellen"
+      },
+      "reauth_confirm": {
+        "data": {
+          "host": "Host",
+          "password": "Passwort",
+          "port": "Port",
+          "use_ssl": "SSL verwenden",
+          "username": "Benutzername",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "description": "Resilio hat die aktuellen Zugangsdaten abgelehnt. Gib aktualisierte Verbindungsdetails ein.",
+        "title": "Erneut mit Resilio Sync authentifizieren"
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host",
+          "password": "Passwort",
+          "port": "Port",
+          "use_ssl": "SSL verwenden",
+          "username": "Benutzername",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "description": "Aktualisiere die Verbindungsdetails für diesen Resilio-Sync-Endpunkt.",
+        "title": "Resilio Sync neu konfigurieren"
+      },
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Passwort",
+          "port": "Port",
+          "use_ssl": "SSL verwenden",
+          "username": "Benutzername",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "description": "Home Assistant mit der lokalen Resilio-Sync-API verbinden.",
+        "title": "Mit Resilio Sync verbinden"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "connectivity": {
+        "name": "Konnektivität"
+      }
+    },
+    "sensor": {
+      "file_count": {
+        "name": "Dateianzahl"
+      },
+      "folder_size": {
+        "name": "Ordnergröße"
+      },
+      "last_updated": {
+        "name": "Zuletzt aktualisiert"
+      },
+      "peer_count_connected": {
+        "name": "Verbundene Peers"
+      },
+      "peer_count_total": {
+        "name": "Konfigurierte Peers"
+      },
+      "sync_state": {
+        "name": "Synchronisierungsstatus",
+        "state": {
+          "error": "Fehler",
+          "in_sync": "Synchron",
+          "paused": "Pausiert",
+          "syncing": "Synchronisiert",
+          "unknown": "Unbekannt"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "max_backups": "Maximale Anzahl Backups",
+          "prune_enabled": "Bereinigung aktivieren",
+          "scan_interval": "Abfrageintervall"
+        },
+        "data_description": {
+          "scan_interval": "Wie oft, in Sekunden, die Resilio-Sync-API nach dem Ordnerstatus abgefragt wird."
+        },
+        "title": "Resilio-Backup-Optionen"
+      }
+    }
+  },
+  "services": {
+    "prune_backups": {
+      "description": "Löscht Backups jenseits des konfigurierten Aufbewahrungslimits für alle geladenen Resilio-Backup-Einträge.",
+      "name": "Backups bereinigen"
+    }
+  },
+  "exceptions": {
+    "backup_not_found": {
+      "message": "Backup {backup_id} nicht gefunden."
+    },
+    "delete_backup_failed": {
+      "message": "Löschen des Backups {backup_id} fehlgeschlagen."
+    },
+    "upload_backup_failed": {
+      "message": "Speichern des Backups {backup_id} fehlgeschlagen."
+    }
+  },
+  "issues": {
+    "folder_not_found": {
+      "title": "Resilio-Ordner existiert nicht mehr",
+      "description": "Der für diesen Eintrag konfigurierte Resilio-Ordner (`{folder_id}`) ist auf dem Resilio-Sync-Server nicht mehr vorhanden. Erstelle den Ordner mit derselben ID auf der Resilio-Seite erneut, oder entferne diese Integration und füge sie erneut hinzu, um einen anderen Ordner auszuwählen."
+    }
+  }
+}
