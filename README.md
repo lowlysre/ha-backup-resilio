@@ -178,6 +178,20 @@ $ resilio-client share-link --host localhost --port 8888 --username admin --pass
 
 Every command prints its result as JSON on stdout. `--ssl`/`--no-verify-ssl` mirror the integration's `use_ssl`/`verify_ssl` options. CI (`resilio-client-e2e` in [`combined.yaml`](.github/workflows/combined.yaml)) runs the `status`, `folders`, and `add-folder` commands against a real `resilio/sync` container on every PR, so the CLI (and the client it wraps) stay validated against Resilio's actual behavior, not just mocked responses.
 
+The tar+json sidecar files this integration writes into that same folder are just as decoupled from Home Assistant: they live in [`resilio_backup_store/`](resilio_backup_store/), with `custom_components/resilio_backup/backup.py`'s `ResilioBackupAgent` as a thin wrapper that adds `AgentBackup` (de)serialization and Home Assistant's translated errors. `resilio-backup-store` drives the same list/create/restore/delete/prune logic directly against a directory, including one a live Resilio Sync agent is actually syncing:
+
+```console
+$ pip install -e .
+$ resilio-backup-store create --backup-path /mnt/sync/folders/backups --backup-id b1 \
+    --metadata '{"date": "2026-08-30T23:00:00+00:00"}' --input archive.tar
+$ resilio-backup-store list --backup-path /mnt/sync/folders/backups
+$ resilio-backup-store restore --backup-path /mnt/sync/folders/backups --backup-id b1 --output restored.tar
+$ resilio-backup-store prune --backup-path /mnt/sync/folders/backups --max-backups 7
+$ resilio-backup-store delete --backup-path /mnt/sync/folders/backups --backup-id b1
+```
+
+`--input`/`--output` accept `-` for stdin/stdout. Metadata is treated as an opaque JSON object; `backup_id` is always set from `--backup-id` regardless of what `--metadata` contains. CI (`backup-store-e2e` in [`combined.yaml`](.github/workflows/combined.yaml)) runs a full create/list/restore/prune/delete round trip against a folder a real `resilio/sync` container manages, on every PR.
+
 ## Known limitations
 
 - **No push updates.** The undocumented `/gui/` API has no webhook or streaming support, so sensor state is only as fresh as the last 60-second poll.

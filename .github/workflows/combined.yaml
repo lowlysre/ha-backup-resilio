@@ -175,11 +175,90 @@ jobs:
       working-directory: tools/cli_e2e
       run: docker compose down -v
 
+  backup-store-e2e:
+    name: resilio-backup-store CLI E2E (docker)
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: "3.14.2"
+    - name: Install resilio-backup-store
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+    - name: Start a Resilio Sync container
+      working-directory: tools/backup_store_e2e
+      run: |
+        mkdir -p data
+        chmod 777 data
+        docker compose up -d
+    - name: Run resilio-backup-store CLI E2E flow
+      # See tools/cli_e2e's equivalent step: the container can accept TCP
+      # connections before rslsync has finished initializing, so retry a few
+      # times before trusting a connection failure.
+      env:
+        RESILIO_ARGS: --host 127.0.0.1 --port 8889 --username admin --password backup-store-e2e-secret
+        BACKUP_PATH: tools/backup_store_e2e/data/folders/backups
+      run: |
+        set -e
+        ready=false
+        for i in $(seq 1 30); do
+          if resilio-client status $RESILIO_ARGS; then
+            ready=true
+            break
+          fi
+          echo "Resilio Sync not ready yet, retrying ($i/30)..."
+          sleep 2
+        done
+        if [ "$ready" != "true" ]; then
+          echo "Resilio Sync container never became ready" >&2
+          exit 1
+        fi
+
+        resilio-client add-folder $RESILIO_ARGS --path /mnt/sync/folders/backups
+        resilio-client folders $RESILIO_ARGS | grep -q /mnt/sync/folders/backups
+
+        # rslsync runs as root in the container, so the backups directory it
+        # just created under the bind mount is root-owned; reclaim it so the
+        # runner user can write backup files into it.
+        sudo chmod -R a+rwX "$(dirname "$BACKUP_PATH")"
+
+        echo -n "hello" > archive.tar
+        resilio-backup-store create --backup-path "$BACKUP_PATH" --backup-id b1 \
+          --metadata '{"date": "2026-08-30T23:00:00+00:00"}' --input archive.tar
+        resilio-backup-store list --backup-path "$BACKUP_PATH" | grep -q '"backup_id": "b1"'
+        resilio-backup-store restore --backup-path "$BACKUP_PATH" --backup-id b1 --output restored.tar
+        cmp archive.tar restored.tar
+
+        resilio-backup-store create --backup-path "$BACKUP_PATH" --backup-id b2 \
+          --metadata '{"date": "2026-08-30T23:10:00+00:00"}' --input archive.tar
+        resilio-backup-store prune --backup-path "$BACKUP_PATH" --max-backups 1 | grep -q '"b1"'
+        resilio-backup-store list --backup-path "$BACKUP_PATH" | grep -q '"backup_id": "b2"'
+
+        resilio-backup-store delete --backup-path "$BACKUP_PATH" --backup-id b2
+        [ "$(resilio-backup-store list --backup-path "$BACKUP_PATH")" = "[]" ]
+    - name: Dump container logs
+      if: failure()
+      working-directory: tools/backup_store_e2e
+      run: docker compose logs
+    - name: Stop container
+      if: always()
+      working-directory: tools/backup_store_e2e
+      run: docker compose down -v
+
   are-we-good:
     name: Are we good?
 
     runs-on: ubuntu-latest
-    needs: [ build, zizmor, resilio-capture, resilio-client-e2e ]
+    needs: [ build, zizmor, resilio-capture, resilio-client-e2e, backup-store-e2e ]
     if: always()
     permissions: {}
     steps:

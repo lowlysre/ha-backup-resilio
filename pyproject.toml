@@ -13,6 +13,7 @@ dependencies = ["aiohttp", "qrcode[pil]==8.2"]
 
 [project.scripts]
 resilio-client = "resilio_client.cli:main"
+resilio-backup-store = "resilio_backup_store.cli:main"
 
 [project.optional-dependencies]
 test = [
@@ -30,7 +31,7 @@ test = [
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["custom_components*", "resilio_client*"]
+include = ["custom_components*", "resilio_client*", "resilio_backup_store*"]
 namespaces = true
 
 [tool.setuptools.package-data]

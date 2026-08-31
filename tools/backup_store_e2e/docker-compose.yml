@@ -1,0 +1,10 @@
+services:
+  resilio:
+    image: resilio/sync
+    container_name: resilio_backup_store_e2e
+    ports:
+      - "127.0.0.1:8889:8888"
+    volumes:
+      - ./sync.conf:/mnt/sync/sync.conf:ro
+      - ./data:/mnt/sync
+    restart: "no"
