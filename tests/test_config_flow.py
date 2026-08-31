@@ -204,6 +204,7 @@ def test_is_matching_returns_false() -> None:
 
 async def test_reauth_flow_happy_path(hass, mock_client) -> None:
     """A successful reauth updates stored credentials and reloads the entry."""
+    assert mock_client is not None
     entry = build_mock_entry(hass)
     entry.add_to_hass(hass)
 
