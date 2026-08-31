@@ -1,0 +1,16 @@
+{
+  "domain": "resilio_backup",
+  "name": "Resilio Backup",
+  "codeowners": [
+    "@lowlysre"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "backup"
+  ],
+  "documentation": "https://github.com/lowlysre/ha-backup-resilio/blob/main/README.md",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/lowlysre/ha-backup-resilio/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
