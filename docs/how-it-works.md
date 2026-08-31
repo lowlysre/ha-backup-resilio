@@ -2,6 +2,7 @@
 
 ```mermaid
 %%{init: {"theme": "dark", "flowchart": {"padding": 14}, "themeVariables": {"fontSize": "14px", "mainBkg": "#21262d", "nodeBorder": "#4493f8"}}}%%
+%% Renders as a diagram on GitHub.com. HACS's in-app viewer uses its own markdown renderer, no Mermaid support, so it shows this whole block as plain text instead, including this comment.
 flowchart LR
     classDef default rx:8,ry:8,stroke-width:0.75px
     HA["Home Assistant<br/>Backup platform"] -- writes .tar/.json --> BP["backup_path<br/>(local directory)"]
@@ -11,9 +12,6 @@ flowchart LR
     Coord["resilio_backup<br/>DataUpdateCoordinator"] -- polls /gui/ API --> RF
     Coord -- updates --> Ent["sensor / binary_sensor entities"]
 ```
-
-> [!NOTE]
-> This diagram renders on GitHub.com. HACS's in-app README viewer uses its own markdown renderer, which doesn't support Mermaid, so it shows this block as plain text instead. The rest of this page describes the same flow in words.
 
 Each backup uses two files in the configured directory:
 

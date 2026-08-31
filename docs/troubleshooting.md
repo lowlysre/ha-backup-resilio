@@ -2,7 +2,7 @@
 
 ## Known limitations
 
-- No push updates: the undocumented `/gui/` API has no webhook or streaming support, so sensor state is only as fresh as the last 60-second poll.
+- No push updates: the undocumented `/gui/` API has no webhook or streaming support, so sensor state is only as fresh as the last poll (`scan_interval`, default 300 seconds).
 - No device discovery: Resilio Sync doesn't advertise itself over the network (no zeroconf/SSDP/DHCP), so setup always requires manually entering `host`/`port`.
 - Single Resilio folder per config entry: each config entry tracks one Resilio folder; add another entry to back up to a second folder.
 - No update entity: this integration cannot update the Resilio Sync agent's software itself; do that from the Resilio app or OS package manager.

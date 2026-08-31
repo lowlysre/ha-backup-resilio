@@ -73,7 +73,7 @@ automation:
   - Enables or disables automatic pruning after upload
 - `scan_interval`
   - Seconds between polls of the Resilio Sync API for folder status
-  - Defaults to `60`, minimum `10`
+  - Defaults to `300`, minimum `10`
 
 ## Service
 
