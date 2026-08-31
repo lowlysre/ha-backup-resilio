@@ -1,7 +1,7 @@
 # resilio-backup-store CLI E2E fixture
 
 Standalone docker-compose fixture that runs the `resilio-backup-store` CLI
-(`resilio_backup_store/`) against a folder a real, unlicensed `resilio/sync`
+(`custom_components/resilio_backup/resilio_backup_store/`) against a folder a real, unlicensed `resilio/sync`
 container actively manages. Second slice of lowlysre/ha-backup-resilio#2's
 CLI extraction + E2E ask (the first slice, the WebUI client CLI, is in
 `tools/cli_e2e/`): validates the `create`/`list`/`restore`/`prune`/`delete`

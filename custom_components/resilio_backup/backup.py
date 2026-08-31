@@ -8,6 +8,12 @@ HA-agnostic ``resilio_backup_store`` package (also drivable as the
 This module only adds the Home Assistant-specific pieces: ``AgentBackup``
 (de)serialization, translated errors, and running blocking file I/O via
 ``hass.async_add_executor_job``.
+
+``resilio_backup_store`` is a subpackage of ``custom_components.resilio_backup``
+(rather than a standalone top-level package) so this folder stays
+self-contained: Home Assistant only ever loads
+``custom_components/resilio_backup`` (e.g. via HACS or a manual copy), and
+never sees anything outside it.
 """
 
 from __future__ import annotations
@@ -22,8 +28,8 @@ from homeassistant.components.backup.models import AgentBackup, BackupAgentError
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from resilio_backup_store import BackupNotFoundError, BackupStore
-from resilio_backup_store.store import CHUNK_SIZE, parse_backup_date as _parse_backup_date
+from .resilio_backup_store import BackupNotFoundError, BackupStore
+from .resilio_backup_store.store import CHUNK_SIZE, parse_backup_date as _parse_backup_date
 
 from .const import (
     CONF_BACKUP_PATH,

@@ -12,7 +12,7 @@ from __future__ import annotations
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.resilio_backup.api import ResilioApiClient
-from resilio_client.client import ResilioClient
+from custom_components.resilio_backup.resilio_client.client import ResilioClient
 from tests.common import MOCK_USER_INPUT
 
 

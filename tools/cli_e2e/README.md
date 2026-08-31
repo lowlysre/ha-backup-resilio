@@ -1,7 +1,7 @@
 # resilio-client CLI E2E fixture
 
 Standalone docker-compose fixture that runs the `resilio-client` CLI
-(`resilio_client/`) against a real, unlicensed `resilio/sync` container. First
+(`custom_components/resilio_backup/resilio_client/`) against a real, unlicensed `resilio/sync` container. First
 slice of lowlysre/ha-backup-resilio#2's CLI extraction + E2E ask: validates the
 `status`/`folders`/`add-folder` commands against Resilio's actual behavior
 instead of only mocked responses. A full backup/restore CLI is a deferred

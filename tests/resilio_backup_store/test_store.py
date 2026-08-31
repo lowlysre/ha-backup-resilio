@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from resilio_backup_store.store import (
+from custom_components.resilio_backup.resilio_backup_store.store import (
     BackupNotFoundError,
     BackupStore,
     parse_backup_date,

@@ -7,7 +7,7 @@ import asyncio
 import aiohttp
 import pytest
 
-from resilio_client.client import (
+from custom_components.resilio_backup.resilio_client.client import (
     ResilioApiError,
     ResilioAuthError,
     ResilioClient,

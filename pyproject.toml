@@ -12,8 +12,8 @@ requires-python = ">=3.14"
 dependencies = ["aiohttp", "qrcode[pil]==8.2"]
 
 [project.scripts]
-resilio-client = "resilio_client.cli:main"
-resilio-backup-store = "resilio_backup_store.cli:main"
+resilio-client = "custom_components.resilio_backup.resilio_client.cli:main"
+resilio-backup-store = "custom_components.resilio_backup.resilio_backup_store.cli:main"
 
 [project.optional-dependencies]
 test = [
@@ -31,7 +31,7 @@ test = [
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["custom_components*", "resilio_client*", "resilio_backup_store*"]
+include = ["custom_components*"]
 namespaces = true
 
 [tool.setuptools.package-data]
