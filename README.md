@@ -88,3 +88,7 @@ Each backup uses two files in the configured directory:
   - backup metadata that rebuilds the backup list without reopening the tarball
 
 This integration only writes the local files, tracks metadata, applies retention, and reports status. Resilio Sync still handles the actual peer-to-peer transfer.
+
+### Resilio API response shape
+
+Every Resilio Sync v2 endpoint wraps its payload as `{"data": ..., "method": ..., "path": ..., "status": 0}`, confirmed against the [`bt-sync/sync_api_sample`](https://github.com/bt-sync/sync_api_sample) reference and a live agent; `status` is `0` on success, and a non-zero value is a logical failure even when the HTTP status is `200`. `api.py`'s `_async_request` unwraps `data` and raises on either that or a non-2xx HTTP status.

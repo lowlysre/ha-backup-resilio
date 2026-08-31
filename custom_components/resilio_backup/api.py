@@ -69,7 +69,14 @@ class ResilioApiClient:
         json_body: Mapping[str, Any] | None = None,
         not_found_error: type[ResilioApiError] | None = None,
     ) -> Any:
-        """Perform a request against the Resilio API."""
+        """Perform a request against the Resilio API.
+
+        Every Resilio Sync v2 response is wrapped as
+        ``{"data": ..., "method": ..., "path": ..., "status": 0}``, with a non-zero
+        ``status`` meaning a logical failure even on an HTTP 200
+        (https://github.com/bt-sync/sync_api_sample). This unwraps ``data`` and
+        raises on either that or a non-2xx HTTP status.
+        """
         url = f"{self._base_url}{path}"
         try:
             async with self._session.request(
@@ -102,10 +109,27 @@ class ResilioApiClient:
                     raise ResilioApiError(
                         f"Resilio API request failed with status {response.status}"
                     )
-                return await response.json(content_type=None)
+                payload = await response.json(content_type=None)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             _LOGGER.debug("Unable to reach Resilio API at %s: %s", url, err)
             raise ResilioConnectionError("Unable to connect to the Resilio API") from err
+
+        if not isinstance(payload, dict) or "data" not in payload:
+            return payload
+
+        api_status = payload.get("status")
+        if isinstance(api_status, int) and api_status != 0:
+            _LOGGER.debug(
+                "Resilio API request %s %s reported status %s: %s",
+                method,
+                url,
+                api_status,
+                payload,
+            )
+            raise ResilioApiError(
+                f"Resilio API reported failure status {api_status} for {path}"
+            )
+        return payload["data"]
 
     async def async_get_os(self) -> dict[str, Any]:
         """Fetch the OS endpoint as a connectivity check."""

@@ -46,6 +46,17 @@ MOCK_FOLDER = {
 MOCK_OS = {"os": "windows", "version": "3.0"}
 
 
+def envelope(data, *, method: str = "GET", path: str = "/api/v2/os", status: int = 0) -> dict:
+    """Wrap payload data the way the real Resilio Sync v2 API does.
+
+    Every response is ``{"data": ..., "method": ..., "path": ..., "status": 0}``
+    (https://github.com/bt-sync/sync_api_sample), confirmed against a live agent;
+    tests must mock this shape, not a bare payload, or they don't catch API client
+    bugs that only trip over the real envelope.
+    """
+    return {"data": data, "method": method, "path": path, "status": status}
+
+
 def build_backup_dir(hass, name: str | None = None) -> Path:
     """Build a backup directory inside the test config path."""
     return Path(hass.config.path(name or f"resilio_backups_{uuid4().hex}"))
@@ -109,7 +120,10 @@ async def setup_integration(hass, aioclient_mock, **entry_overrides) -> MockConf
     entry.add_to_hass(hass)
 
     base_url = "http://resilio.local:8888/api/v2"
-    aioclient_mock.get(f"{base_url}/folders/{MOCK_FOLDER['id']}", json=MOCK_FOLDER)
+    aioclient_mock.get(
+        f"{base_url}/folders/{MOCK_FOLDER['id']}",
+        json=envelope(MOCK_FOLDER, path=f"/api/v2/folders/{MOCK_FOLDER['id']}"),
+    )
 
     assert await async_setup_component(hass, DOMAIN, {})
     await hass.async_block_till_done()
