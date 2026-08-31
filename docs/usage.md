@@ -22,7 +22,7 @@ The integration also creates:
 | File count | `sensor` | Number of files currently in the synced folder |
 | Peer count | `sensor` | Number of connected Resilio peers for the folder |
 | Configured peer count | `sensor` | Number of Resilio peers configured for the folder, connected or not |
-| Last updated | `sensor` | Timestamp of the last successful poll of the Resilio API |
+| Last updated | `sensor` | Timestamp of the last successful poll of the Resilio API (disabled by default; it changes every poll and would otherwise flood the device's Activity log) |
 | Connectivity | `binary_sensor` | Whether the Resilio API was reachable on the last poll |
 
 ## Data updates

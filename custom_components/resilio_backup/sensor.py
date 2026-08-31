@@ -138,10 +138,16 @@ class ResilioPeerCountTotalSensor(ResilioEntity, SensorEntity):
 
 
 class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
-    """Expose the timestamp of the last successful poll."""
+    """Expose the timestamp of the last successful poll.
+
+    Disabled by default: it changes on every successful poll, which floods a
+    device's Activity/Logbook feed with a "Last updated" entry each cycle.
+    Users who want it can still enable it from the entity settings.
+    """
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "last_updated"
 
     def __init__(
