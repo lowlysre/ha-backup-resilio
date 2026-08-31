@@ -215,6 +215,11 @@ jobs:
         resilio-client add-folder $RESILIO_ARGS --path /mnt/sync/folders/backups
         resilio-client folders $RESILIO_ARGS | grep -q /mnt/sync/folders/backups
 
+        # rslsync runs as root in the container, so the backups directory it
+        # just created under the bind mount is root-owned; reclaim it so the
+        # runner user can write backup files into it.
+        sudo chmod -R a+rwX "$(dirname "$BACKUP_PATH")"
+
         echo -n "hello" > archive.tar
         resilio-backup-store create --backup-path "$BACKUP_PATH" --backup-id b1 \
           --metadata '{"date": "2026-08-30T23:00:00+00:00"}' --input archive.tar
