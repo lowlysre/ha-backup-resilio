@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -51,13 +52,30 @@ class ResilioFolderStatus:
     last_success: datetime = field(default_factory=dt_util.utcnow)
 
 
+@dataclass
+class ResilioBackupData:
+    """Runtime data for a Resilio config entry.
+
+    Defined here, rather than in ``__init__.py``, so this module and the
+    ``ResilioConfigEntry`` alias below can be imported by every other module
+    that needs the typed config entry, without a circular import back to
+    ``__init__.py``.
+    """
+
+    client: ResilioApiClient
+    coordinator: ResilioDataUpdateCoordinator
+
+
+type ResilioConfigEntry = ConfigEntry[ResilioBackupData]
+
+
 class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
     """Fetch and normalize folder status."""
 
     def __init__(
         self,
-        hass,
-        entry: ConfigEntry,
+        hass: HomeAssistant,
+        entry: ResilioConfigEntry,
         client: ResilioApiClient,
     ) -> None:
         """Initialize the coordinator."""

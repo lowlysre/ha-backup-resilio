@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from functools import partial
 
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -19,21 +18,14 @@ from .const import (
     DOMAIN,
     SERVICE_PRUNE_BACKUPS,
 )
-from .coordinator import ResilioDataUpdateCoordinator
+from .coordinator import ResilioBackupData, ResilioConfigEntry, ResilioDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
-@dataclass
-class ResilioBackupData:
-    """Runtime data for a Resilio config entry."""
-
-    client: ResilioApiClient
-    coordinator: ResilioDataUpdateCoordinator
-
-
 async def _async_handle_prune_service(hass: HomeAssistant, _call: ServiceCall) -> None:
     """Handle pruning old backups for all loaded entries."""
+    loaded_entry: ResilioConfigEntry
     for loaded_entry in hass.config_entries.async_entries(DOMAIN):
         if loaded_entry.state is ConfigEntryState.LOADED:
             await async_prune_backups(hass, loaded_entry)
@@ -47,7 +39,7 @@ async def async_setup(hass: HomeAssistant, _config: ConfigType) -> bool:
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ResilioConfigEntry) -> bool:
     """Set up Resilio Backup from a config entry."""
     client = ResilioApiClient(
         hass,
@@ -67,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ResilioConfigEntry) -> bool:
     """Unload a Resilio Backup entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if not unload_ok:

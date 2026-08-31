@@ -10,12 +10,11 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfInformation
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.core import HomeAssistant
 
-from .coordinator import ResilioDataUpdateCoordinator
+from .coordinator import ResilioConfigEntry, ResilioDataUpdateCoordinator
 from .entity import ResilioEntity
 
 # Coordinator centralizes data updates; this is a read-only platform.
@@ -32,7 +31,7 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -58,7 +57,7 @@ class ResilioFolderSizeSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -80,7 +79,7 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -102,7 +101,7 @@ class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -125,7 +124,7 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
     def __init__(
         self,
         coordinator: ResilioDataUpdateCoordinator,
-        entry: ConfigEntry,
+        entry: ResilioConfigEntry,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
@@ -140,7 +139,7 @@ class ResilioLastUpdatedSensor(ResilioEntity, SensorEntity):
 
 async def async_setup_entry(
     _hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ResilioConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up Resilio Backup sensors."""

@@ -11,7 +11,7 @@ from typing import Any
 
 from homeassistant.components.backup.agent import BackupAgent, OnProgressCallback
 from homeassistant.components.backup.models import AgentBackup, BackupAgentError, BackupNotFound
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
 from .const import (
@@ -23,6 +23,7 @@ from .const import (
     DOMAIN,
     EVENT_BACKUPS_PRUNED,
 )
+from .coordinator import ResilioConfigEntry
 
 LOGGER = logging.getLogger(__name__)
 LISTENERS_KEY = f"{DOMAIN}_backup_listeners"
@@ -34,11 +35,12 @@ async def async_get_backup_agents(
     **_kwargs: Any,
 ) -> list[BackupAgent]:
     """Return backup agents for all loaded entries."""
-    return [
-        ResilioBackupAgent(hass, entry)
-        for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.state is ConfigEntryState.LOADED
-    ]
+    agents: list[BackupAgent] = []
+    loaded_entry: ResilioConfigEntry
+    for loaded_entry in hass.config_entries.async_entries(DOMAIN):
+        if loaded_entry.state is ConfigEntryState.LOADED:
+            agents.append(ResilioBackupAgent(hass, loaded_entry))
+    return agents
 
 
 @callback
@@ -94,7 +96,7 @@ class ResilioBackupAgent(BackupAgent):
 
     domain = DOMAIN
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: ResilioConfigEntry) -> None:
         """Initialize the agent."""
         self.name = entry.title
         self.unique_id = entry.entry_id
@@ -234,7 +236,7 @@ class ResilioBackupAgent(BackupAgent):
             ) from err
 
 
-async def async_prune_backups(hass: HomeAssistant, entry: ConfigEntry) -> int:
+async def async_prune_backups(hass: HomeAssistant, entry: ResilioConfigEntry) -> int:
     """Prune old backups for one entry."""
     if not entry.options.get(CONF_PRUNE_ENABLED, DEFAULT_PRUNE_ENABLED):
         return 0

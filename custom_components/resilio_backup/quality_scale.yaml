@@ -1,7 +1,7 @@
 # Self-assessment against Home Assistant's Integration Quality Scale
 # (https://developers.home-assistant.io/docs/core/integration-quality-scale/).
 # This integration is HACS-distributed, not part of home-assistant/core, so it
-# cannot receive an official badge. Target tier: Gold.
+# cannot receive an official badge. Target tier: Platinum.
 rules:
   # Bronze
   action-setup: done
@@ -91,3 +91,17 @@ rules:
   stale-devices:
     status: exempt
     comment: Each config entry always creates exactly one static device; there are no dynamically-added devices to go stale.
+
+  # Platinum
+  async-dependency:
+    status: done
+    comment: >-
+      No separate PyPI dependency; the Resilio WebUI client in api.py is
+      bundled with the integration and fully async (async def throughout).
+  inject-websession: done
+  strict-typing:
+    status: done
+    comment: >-
+      ConfigEntry[ResilioBackupData] (aliased as ResilioConfigEntry in
+      coordinator.py) is used throughout instead of a plain ConfigEntry,
+      since runtime-data is implemented.
