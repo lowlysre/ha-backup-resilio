@@ -14,7 +14,15 @@ from custom_components.resilio_backup.api import (
     ResilioConnectionError,
     ResilioFolderNotFoundError,
 )
-from tests.common import MOCK_FOLDER, MOCK_OS, MOCK_USER_INPUT, envelope
+from tests.common import (
+    MOCK_FOLDER,
+    MOCK_OS,
+    MOCK_USER_INPUT,
+    mock_token_endpoint,
+    webui_action,
+)
+
+BASE_URL = "http://resilio.local:8888/gui"
 
 
 @pytest.fixture(name="resilio_client")
@@ -24,155 +32,278 @@ def fixture_resilio_client(hass):
 
 
 async def test_async_get_os_success(aioclient_mock, resilio_client) -> None:
-    """The OS endpoint unwraps the real Resilio response envelope."""
+    """The OS check hits the getsysteminfo WebUI action, minting a token first."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/os", json=envelope(MOCK_OS, path="/api/v2/os")
+        f"{BASE_URL}/", params={"action": "getsysteminfo"}, json=webui_action(MOCK_OS)
     )
-    assert await resilio_client.async_get_os() == MOCK_OS
+    assert await resilio_client.async_get_os() == {**MOCK_OS, "status": 200}
 
 
-async def test_async_get_os_invalid_auth(aioclient_mock, resilio_client) -> None:
-    """401 and 403 map to auth errors."""
-    aioclient_mock.get("http://resilio.local:8888/api/v2/os", status=401)
+async def test_async_get_os_reuses_token(aioclient_mock, resilio_client) -> None:
+    """A minted token is reused across calls instead of re-fetched every time."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "getsysteminfo"}, json=webui_action(MOCK_OS)
+    )
+    await resilio_client.async_get_os()
+    await resilio_client.async_get_os()
+    token_calls = [call for call in aioclient_mock.mock_calls if "token.html" in str(call[1])]
+    assert len(token_calls) == 1
+
+
+async def test_async_fetch_token_invalid_auth(aioclient_mock, resilio_client) -> None:
+    """401/403 while minting a token maps to an auth error."""
+    aioclient_mock.get(f"{BASE_URL}/token.html", status=401)
     with pytest.raises(ResilioAuthError):
         await resilio_client.async_get_os()
 
 
-async def test_async_get_os_forbidden(aioclient_mock, resilio_client) -> None:
-    """403 maps to auth errors too."""
-    aioclient_mock.get("http://resilio.local:8888/api/v2/os", status=403)
+async def test_async_fetch_token_forbidden(aioclient_mock, resilio_client) -> None:
+    """403 while minting a token maps to an auth error too."""
+    aioclient_mock.get(f"{BASE_URL}/token.html", status=403)
+    with pytest.raises(ResilioAuthError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_fetch_token_server_error(aioclient_mock, resilio_client) -> None:
+    """Unexpected status codes while minting a token raise API errors."""
+    aioclient_mock.get(f"{BASE_URL}/token.html", status=500)
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_fetch_token_connection_error(aioclient_mock, resilio_client) -> None:
+    """Client errors while minting a token map to connection errors."""
+    aioclient_mock.get(f"{BASE_URL}/token.html", exc=aiohttp.ClientError("boom"))
+    with pytest.raises(ResilioConnectionError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_fetch_token_timeout(aioclient_mock, resilio_client) -> None:
+    """Timeouts while minting a token map to connection errors."""
+    aioclient_mock.get(f"{BASE_URL}/token.html", exc=asyncio.TimeoutError())
+    with pytest.raises(ResilioConnectionError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_fetch_token_missing_token(aioclient_mock, resilio_client) -> None:
+    """A response without a recognizable token div is an API error."""
+    aioclient_mock.get(
+        f"{BASE_URL}/token.html", text="<html>no token here</html>", headers={"Set-Cookie": "x=1"}
+    )
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_fetch_token_missing_cookie(aioclient_mock, resilio_client) -> None:
+    """A response without a session cookie is an API error."""
+    aioclient_mock.get(
+        f"{BASE_URL}/token.html",
+        text="<html><div id='token'>abc</div></html>",
+    )
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_os()
+
+
+async def test_async_get_os_invalid_auth(aioclient_mock, resilio_client) -> None:
+    """401/403 on the action call maps to an auth error."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(f"{BASE_URL}/", params={"action": "getsysteminfo"}, status=401)
     with pytest.raises(ResilioAuthError):
         await resilio_client.async_get_os()
 
 
 async def test_async_get_os_connection_error(aioclient_mock, resilio_client) -> None:
-    """Client errors map to connection errors."""
+    """Client errors on the action call map to connection errors."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/os", exc=aiohttp.ClientError("boom")
+        f"{BASE_URL}/", params={"action": "getsysteminfo"}, exc=aiohttp.ClientError("boom")
     )
     with pytest.raises(ResilioConnectionError):
         await resilio_client.async_get_os()
 
 
 async def test_async_get_os_timeout(aioclient_mock, resilio_client) -> None:
-    """Timeouts map to connection errors."""
+    """Timeouts on the action call map to connection errors."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/os", exc=asyncio.TimeoutError()
+        f"{BASE_URL}/", params={"action": "getsysteminfo"}, exc=asyncio.TimeoutError()
     )
     with pytest.raises(ResilioConnectionError):
         await resilio_client.async_get_os()
 
 
 async def test_async_get_os_logical_failure_status(aioclient_mock, resilio_client) -> None:
-    """A non-zero envelope status is a failure even on HTTP 200."""
+    """A non-200/0 action status is a failure even on HTTP 200."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/os",
-        json=envelope(None, path="/api/v2/os", status=1),
+        f"{BASE_URL}/", params={"action": "getsysteminfo"}, json=webui_action({}, status=1)
     )
     with pytest.raises(ResilioApiError):
         await resilio_client.async_get_os()
 
 
-async def test_async_get_os_wraps_non_dict(aioclient_mock, resilio_client) -> None:
-    """Non-dict OS responses are wrapped."""
-    aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/os",
-        json=envelope(["ok"], path="/api/v2/os"),
-    )
-    assert await resilio_client.async_get_os() == {"response": ["ok"]}
+async def test_async_get_os_non_dict_response(aioclient_mock, resilio_client) -> None:
+    """A non-object action response is an API error."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(f"{BASE_URL}/", params={"action": "getsysteminfo"}, json=["oops"])
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_os()
 
 
-async def test_async_get_os_missing_envelope(aioclient_mock, resilio_client) -> None:
-    """A bare (un-enveloped) dict response is still accepted defensively."""
-    aioclient_mock.get("http://resilio.local:8888/api/v2/os", json=MOCK_OS)
-    assert await resilio_client.async_get_os() == MOCK_OS
-
-
-async def test_async_get_folders_success_from_dict(
-    aioclient_mock, resilio_client
+async def test_async_request_retries_once_on_expired_token(
+    aioclient_mock, resilio_client, monkeypatch
 ) -> None:
-    """Folder responses normalize the real ``{"folders": [...]}`` envelope data."""
+    """A stale session token/cookie is re-minted once and the request retried."""
+    # pylint: disable=protected-access
+    tokens = iter(["fresh-token"])
+
+    async def fake_fetch_token() -> None:
+        resilio_client._token = next(tokens)
+        resilio_client._cookie = "SNSID=fresh"
+
+    monkeypatch.setattr(resilio_client, "_async_fetch_token", fake_fetch_token)
+    resilio_client._token = "stale-token"
+    resilio_client._cookie = "SNSID=stale"
+
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders",
-        json=envelope({"folders": [MOCK_FOLDER]}, path="/api/v2/folders"),
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders", "token": "stale-token"},
+        json={"status": 401},
+    )
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders", "token": "fresh-token"},
+        json=webui_action({"folders": [MOCK_FOLDER]}),
+    )
+
+    assert await resilio_client.async_get_folders() == [MOCK_FOLDER]
+
+
+async def test_async_request_gives_up_after_one_retry(
+    aioclient_mock, resilio_client, monkeypatch
+) -> None:
+    """A second consecutive 401 status is surfaced, not retried forever."""
+    # pylint: disable=protected-access
+    call_count = 0
+
+    async def fake_fetch_token() -> None:
+        nonlocal call_count
+        call_count += 1
+        resilio_client._token = f"token-{call_count}"
+        resilio_client._cookie = "SNSID=fresh"
+
+    monkeypatch.setattr(resilio_client, "_async_fetch_token", fake_fetch_token)
+    resilio_client._token = "token-0"
+    resilio_client._cookie = "SNSID=stale"
+
+    aioclient_mock.get(f"{BASE_URL}/", json={"status": 401})
+
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_folders()
+
+
+async def test_async_get_folders_success(aioclient_mock, resilio_client) -> None:
+    """Folders normalize ``folderid`` into an ``id`` key."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [MOCK_FOLDER]}),
     )
     assert await resilio_client.async_get_folders() == [MOCK_FOLDER]
 
 
-async def test_async_get_folders_success_from_list(
-    aioclient_mock, resilio_client
-) -> None:
-    """Folder responses also normalize a bare list payload defensively."""
+async def test_async_get_folders_malformed_response(aioclient_mock, resilio_client) -> None:
+    """A response missing the ``folders`` list raises an API error."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders",
-        json=envelope([MOCK_FOLDER], path="/api/v2/folders"),
-    )
-    assert await resilio_client.async_get_folders() == [MOCK_FOLDER]
-
-
-async def test_async_get_folders_malformed_response(
-    aioclient_mock, resilio_client
-) -> None:
-    """Unexpected folder payloads raise API errors."""
-    aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders",
-        json=envelope({"items": []}, path="/api/v2/folders"),
+        f"{BASE_URL}/", params={"action": "getsyncfolders"}, json=webui_action({"items": []})
     )
     with pytest.raises(ResilioApiError):
         await resilio_client.async_get_folders()
 
 
-async def test_async_get_folder_success(aioclient_mock, resilio_client) -> None:
-    """A folder can be fetched and unwrapped from the envelope."""
+async def test_async_get_folders_skips_entries_without_folderid(
+    aioclient_mock, resilio_client
+) -> None:
+    """Entries missing a ``folderid`` are dropped rather than crashing."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders/folder123",
-        json=envelope(MOCK_FOLDER, path="/api/v2/folders/folder123"),
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [MOCK_FOLDER, {"name": "no id"}]}),
+    )
+    assert await resilio_client.async_get_folders() == [MOCK_FOLDER]
+
+
+async def test_async_get_folder_success(aioclient_mock, resilio_client) -> None:
+    """A folder can be found by id from the folder list."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [MOCK_FOLDER]}),
+    )
+    assert await resilio_client.async_get_folder("folder123") == MOCK_FOLDER
+
+
+async def test_async_get_folder_skips_non_matching_entries(
+    aioclient_mock, resilio_client
+) -> None:
+    """A match past the first list entry is still found."""
+    other_folder = {**MOCK_FOLDER, "folderid": "other", "id": "other", "path": "C:\\Other"}
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [other_folder, MOCK_FOLDER]}),
     )
     assert await resilio_client.async_get_folder("folder123") == MOCK_FOLDER
 
 
 async def test_async_get_folder_not_found(aioclient_mock, resilio_client) -> None:
-    """404 maps to the folder not found error."""
-    aioclient_mock.get("http://resilio.local:8888/api/v2/folders/folder123", status=404)
+    """A folder id absent from the folder list raises the not-found error."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "getsyncfolders"}, json=webui_action({"folders": []})
+    )
     with pytest.raises(ResilioFolderNotFoundError):
         await resilio_client.async_get_folder("folder123")
 
 
-async def test_async_get_folder_malformed_response(
-    aioclient_mock, resilio_client
-) -> None:
-    """Folder detail must be an object."""
-    aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders/folder123",
-        json=envelope([], path="/api/v2/folders/folder123"),
-    )
-    with pytest.raises(ResilioApiError):
-        await resilio_client.async_get_folder("folder123")
-
-
 async def test_async_add_folder_success(aioclient_mock, resilio_client) -> None:
-    """Folders can be created and unwrapped from the envelope."""
-    aioclient_mock.post(
-        "http://resilio.local:8888/api/v2/folders",
-        json=envelope(MOCK_FOLDER, method="POST", path="/api/v2/folders"),
+    """A newly added folder is looked up by path from the refreshed folder list."""
+    other_folder = {**MOCK_FOLDER, "folderid": "other", "id": "other", "path": "C:\\Other"}
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "addsyncfolder"}, json=webui_action({})
     )
-    assert await resilio_client.async_add_folder("C:\\Resilio\\Backups") == MOCK_FOLDER
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [other_folder, MOCK_FOLDER]}),
+    )
+    assert await resilio_client.async_add_folder(MOCK_FOLDER["path"]) == MOCK_FOLDER
 
 
-async def test_async_add_folder_malformed_response(
-    aioclient_mock, resilio_client
-) -> None:
-    """Folder creation must return an object."""
-    aioclient_mock.post(
-        "http://resilio.local:8888/api/v2/folders",
-        json=envelope(["bad"], method="POST", path="/api/v2/folders"),
+async def test_async_add_folder_not_reported_back(aioclient_mock, resilio_client) -> None:
+    """If the added folder isn't in the refreshed list, that's an API error."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "addsyncfolder"}, json=webui_action({})
+    )
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "getsyncfolders"}, json=webui_action({"folders": []})
     )
     with pytest.raises(ResilioApiError):
-        await resilio_client.async_add_folder("C:\\Resilio\\Backups")
+        await resilio_client.async_add_folder("C:\\Resilio\\NewFolder")
 
 
 async def test_async_add_folder_server_error(aioclient_mock, resilio_client) -> None:
-    """Unexpected status codes raise API errors."""
-    aioclient_mock.post("http://resilio.local:8888/api/v2/folders", status=500)
+    """Unexpected status codes on the add call raise API errors."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(f"{BASE_URL}/", params={"action": "addsyncfolder"}, status=500)
     with pytest.raises(ResilioApiError):
         await resilio_client.async_add_folder("C:\\Resilio\\Backups")

@@ -89,6 +89,11 @@ Each backup uses two files in the configured directory:
 
 This integration only writes the local files, tracks metadata, applies retention, and reports status. Resilio Sync still handles the actual peer-to-peer transfer.
 
-### Resilio API response shape
+### Resilio's API
 
-Every Resilio Sync v2 endpoint wraps its payload as `{"data": ..., "method": ..., "path": ..., "status": 0}`, confirmed against the [`bt-sync/sync_api_sample`](https://github.com/bt-sync/sync_api_sample) reference and a live agent; `status` is `0` on success, and a non-zero value is a logical failure even when the HTTP status is `200`. `api.py`'s `_async_request` unwraps `data` and raises on either that or a non-2xx HTTP status.
+Resilio Sync's documented [`/api/v2`](https://github.com/bt-sync/sync_api_sample) REST API is gated behind a paid Business license; a free-tier install rejects it with an HTTP 400 and no body, confirmed against a live agent.
+
+This integration instead drives the same undocumented `/gui/` endpoint the Sync WebUI itself uses: it mints a CSRF token from `/gui/token.html` (Basic Auth) plus the session cookie that comes back with it, then attaches both to every `action=` query call. That's the same approach taken by the reverse-engineered clients [`rslsync`](https://github.com/zhongkechen/python-resilio-sync-unofficial) and [`resilio-sync-cli`](https://github.com/PythonNut/resilio-sync-cli), which remain the only working references for this API; Resilio has never published it. `api.py`'s `_async_fetch_token` and `_async_request` implement this, including a one-shot retry to remint the token if a session expires mid-use.
+
+Every `/gui/` action response is a flat dict with a `status` field, where `200` means success; a non-200 status is a logical failure even on an HTTP 200 response.
+

@@ -34,6 +34,7 @@ MOCK_USER_INPUT = {
 }
 
 MOCK_FOLDER = {
+    "folderid": "folder123",
     "id": "folder123",
     "path": "C:\\Resilio\\Backups",
     "name": "Home Assistant Backups",
@@ -45,16 +46,28 @@ MOCK_FOLDER = {
 
 MOCK_OS = {"os": "windows", "version": "3.0"}
 
+MOCK_TOKEN = "TESTTOKEN123"
+MOCK_TOKEN_HTML = f"<html><div id='token' style='display:none;'>{MOCK_TOKEN}</div></html>"
+MOCK_TOKEN_HEADERS = {"Set-Cookie": "SNSID=deadbeef; Path=/; HttpOnly"}
 
-def envelope(data, *, method: str = "GET", path: str = "/api/v2/os", status: int = 0) -> dict:
-    """Wrap payload data the way the real Resilio Sync v2 API does.
 
-    Every response is ``{"data": ..., "method": ..., "path": ..., "status": 0}``
-    (https://github.com/bt-sync/sync_api_sample), confirmed against a live agent;
-    tests must mock this shape, not a bare payload, or they don't catch API client
-    bugs that only trip over the real envelope.
+def webui_action(data, *, status: int = 200) -> dict:
+    """Wrap payload data the way the real Resilio Sync WebUI action API does.
+
+    Every ``/gui/?action=...`` response is a flat dict with a ``status`` field
+    (200 on success), confirmed against real reverse-engineered clients
+    (https://github.com/zhongkechen/python-resilio-sync-unofficial,
+    https://github.com/PythonNut/resilio-sync-cli). That's a different shape
+    than the licensed ``/api/v2`` envelope this integration no longer uses.
     """
-    return {"data": data, "method": method, "path": path, "status": status}
+    return {**data, "status": status}
+
+
+def mock_token_endpoint(aioclient_mock, base_url: str) -> None:
+    """Register the ``/gui/token.html`` mock every action call depends on."""
+    aioclient_mock.get(
+        f"{base_url}/token.html", text=MOCK_TOKEN_HTML, headers=MOCK_TOKEN_HEADERS
+    )
 
 
 def build_backup_dir(hass, name: str | None = None) -> Path:
@@ -119,10 +132,12 @@ async def setup_integration(hass, aioclient_mock, **entry_overrides) -> MockConf
     )
     entry.add_to_hass(hass)
 
-    base_url = "http://resilio.local:8888/api/v2"
+    base_url = "http://resilio.local:8888/gui"
+    mock_token_endpoint(aioclient_mock, base_url)
     aioclient_mock.get(
-        f"{base_url}/folders/{MOCK_FOLDER['id']}",
-        json=envelope(MOCK_FOLDER, path=f"/api/v2/folders/{MOCK_FOLDER['id']}"),
+        f"{base_url}/",
+        params={"action": "getsyncfolders"},
+        json=webui_action({"folders": [MOCK_FOLDER]}),
     )
 
     assert await async_setup_component(hass, DOMAIN, {})

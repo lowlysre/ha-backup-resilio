@@ -9,7 +9,7 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntryState
 
 from custom_components.resilio_backup.const import DOMAIN, SERVICE_PRUNE_BACKUPS
-from tests.common import MOCK_FOLDER, build_mock_entry, setup_integration
+from tests.common import MOCK_FOLDER, build_mock_entry, mock_token_endpoint, setup_integration
 
 
 async def test_setup_entry_success(hass, aioclient_mock) -> None:
@@ -25,8 +25,11 @@ async def test_setup_entry_not_ready_on_refresh_failure(hass, aioclient_mock) ->
     """Coordinator refresh failures leave the entry in retry state."""
     entry = build_mock_entry(hass)
     entry.add_to_hass(hass)
+    base_url = "http://resilio.local:8888/gui"
+    mock_token_endpoint(aioclient_mock, base_url)
     aioclient_mock.get(
-        "http://resilio.local:8888/api/v2/folders/folder123",
+        f"{base_url}/",
+        params={"action": "getsyncfolders"},
         exc=aiohttp.ClientError("down"),
     )
 

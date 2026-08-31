@@ -1,4 +1,4 @@
-"""Thin async client for the Resilio Sync local API."""
+"""Thin async client for the Resilio Sync WebUI API."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ import asyncio
 import base64
 from collections.abc import Mapping
 import logging
+import re
+import time
 from typing import Any
 
 import aiohttp
@@ -15,6 +17,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 _LOGGER = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+_TOKEN_PATTERN = re.compile(r"id=['\"]token['\"][^>]*>(?P<token>[\w-]+)<")
 
 
 class ResilioApiError(Exception):
@@ -33,8 +36,29 @@ class ResilioFolderNotFoundError(ResilioApiError):
     """Raised when the configured folder no longer exists."""
 
 
+def _timestamp_ms() -> int:
+    """Return the current time in milliseconds, as the WebUI expects."""
+    return int(time.time() * 1000)
+
+
 class ResilioApiClient:
-    """Async client for the Resilio Sync local API."""
+    """Async client for Resilio Sync's undocumented WebUI API.
+
+    Resilio Sync has no REST API on the free tier: the documented ``/api/v2``
+    endpoints (https://github.com/bt-sync/sync_api_sample) return HTTP 400 on
+    an unlicensed install, confirmed against a live agent, since that API is
+    gated behind a paid Business license
+    (https://help.resilio.com/hc/en-us/articles/360013238759).
+
+    This instead drives the same internal ``/gui/`` endpoint the WebUI itself
+    uses: a CSRF token minted from ``/gui/token.html`` plus its session
+    cookie, both attached to every ``action=`` query call. That's the
+    approach taken by the reverse-engineered clients ``rslsync``
+    (https://github.com/zhongkechen/python-resilio-sync-unofficial) and
+    ``resilio-sync-cli`` (https://github.com/PythonNut/resilio-sync-cli),
+    which remain the only working references for a free-tier install; there
+    is no official documentation for this protocol.
+    """
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
@@ -50,59 +74,75 @@ class ResilioApiClient:
         """Initialize the API client."""
         self._session = async_get_clientsession(hass)
         scheme = "https" if use_ssl else "http"
-        self._base_url = f"{scheme}://{host}:{port}/api/v2"
+        self._base_url = f"{scheme}://{host}:{port}/gui"
         self._ssl = not use_ssl or verify_ssl
         # aiohttp.BasicAuth is deprecated in favor of a plain header; built manually
         # here to avoid depending on a specific aiohttp version's replacement helper.
         credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
-        # Resilio also checks the request origin against its own address.
-        self._headers = {
-            "Referer": f"{self._base_url}/",
-            "Authorization": f"Basic {credentials}",
-        }
+        self._auth_header = {"Authorization": f"Basic {credentials}"}
+        self._token: str | None = None
+        self._cookie: str | None = None
 
-    async def _async_request(
-        self,
-        method: str,
-        path: str,
-        *,
-        json_body: Mapping[str, Any] | None = None,
-        not_found_error: type[ResilioApiError] | None = None,
-    ) -> Any:
-        """Perform a request against the Resilio API.
-
-        Every Resilio Sync v2 response is wrapped as
-        ``{"data": ..., "method": ..., "path": ..., "status": 0}``, with a non-zero
-        ``status`` meaning a logical failure even on an HTTP 200
-        (https://github.com/bt-sync/sync_api_sample). This unwraps ``data`` and
-        raises on either that or a non-2xx HTTP status.
-        """
-        url = f"{self._base_url}{path}"
+    async def _async_fetch_token(self) -> None:
+        """Mint a fresh CSRF token and session cookie from the WebUI."""
+        url = f"{self._base_url}/token.html"
         try:
-            async with self._session.request(
-                method,
+            async with self._session.get(
                 url,
-                headers=self._headers,
-                json=json_body,
+                headers=self._auth_header,
+                params={"t": _timestamp_ms()},
                 timeout=REQUEST_TIMEOUT,
                 ssl=self._ssl,
             ) as response:
                 if response.status in (401, 403):
-                    _LOGGER.debug(
-                        "Resilio API rejected credentials for %s %s (HTTP %s)",
-                        method,
-                        url,
-                        response.status,
-                    )
                     raise ResilioAuthError("Invalid Resilio API credentials")
-                if response.status == 404 and not_found_error is not None:
-                    raise not_found_error(f"Resilio resource not found: {path}")
+                if response.status < 200 or response.status >= 300:
+                    raise ResilioApiError(
+                        f"Resilio token request failed with status {response.status}"
+                    )
+                body = await response.text()
+                cookie = response.headers.get("Set-Cookie")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.debug("Unable to reach Resilio WebUI at %s: %s", url, err)
+            raise ResilioConnectionError("Unable to connect to the Resilio API") from err
+
+        match = _TOKEN_PATTERN.search(body)
+        if not match or not cookie:
+            raise ResilioApiError("Resilio WebUI did not return a valid session token")
+        self._token = match.group("token")
+        self._cookie = cookie.split(";", 1)[0]
+
+    async def _async_request(
+        self, action: str, *, params: Mapping[str, Any] | None = None, _retry: bool = True
+    ) -> dict[str, Any]:
+        """Call a ``/gui/`` WebUI action and return its decoded response.
+
+        Every WebUI action response is a flat dict with a ``status`` field,
+        where 200 means success. That's different from the licensed
+        ``/api/v2`` envelope (``{"data": ..., "status": 0}``), which this
+        client no longer talks to.
+        """
+        if self._token is None:
+            await self._async_fetch_token()
+
+        url = f"{self._base_url}/"
+        query = {"token": self._token, "action": action, "t": _timestamp_ms(), **(params or {})}
+        headers = {**self._auth_header, "Cookie": self._cookie}
+        try:
+            async with self._session.get(
+                url,
+                headers=headers,
+                params=query,
+                timeout=REQUEST_TIMEOUT,
+                ssl=self._ssl,
+            ) as response:
+                if response.status in (401, 403):
+                    raise ResilioAuthError("Invalid Resilio API credentials")
                 if response.status < 200 or response.status >= 300:
                     body = await response.text()
                     _LOGGER.debug(
-                        "Resilio API request %s %s failed with HTTP %s: %s",
-                        method,
-                        url,
+                        "Resilio API action %s failed with HTTP %s: %s",
+                        action,
                         response.status,
                         body,
                     )
@@ -114,53 +154,64 @@ class ResilioApiClient:
             _LOGGER.debug("Unable to reach Resilio API at %s: %s", url, err)
             raise ResilioConnectionError("Unable to connect to the Resilio API") from err
 
-        if not isinstance(payload, dict) or "data" not in payload:
-            return payload
+        if not isinstance(payload, dict):
+            raise ResilioApiError(f"Unexpected Resilio API response for action {action}")
 
-        api_status = payload.get("status")
-        if isinstance(api_status, int) and api_status != 0:
+        status = payload.get("status")
+        if status == 401 and _retry:
+            # The session cookie/token can expire independently of the
+            # underlying credentials; remint once before giving up.
+            self._token = None
+            return await self._async_request(action, params=params, _retry=False)
+        if isinstance(status, int) and status not in (200, 0):
             _LOGGER.debug(
-                "Resilio API request %s %s reported status %s: %s",
-                method,
-                url,
-                api_status,
-                payload,
+                "Resilio API action %s reported status %s: %s", action, status, payload
             )
             raise ResilioApiError(
-                f"Resilio API reported failure status {api_status} for {path}"
+                f"Resilio API reported failure status {status} for action {action}"
             )
-        return payload["data"]
+        return payload
 
     async def async_get_os(self) -> dict[str, Any]:
-        """Fetch the OS endpoint as a connectivity check."""
-        response = await self._async_request("GET", "/os")
-        if isinstance(response, dict):
-            return response
-        return {"response": response}
+        """Fetch system info as a connectivity and credentials check."""
+        return await self._async_request("getsysteminfo")
 
     async def async_get_folders(self) -> list[dict[str, Any]]:
-        """Fetch all managed folders."""
-        response = await self._async_request("GET", "/folders")
-        if isinstance(response, list):
-            return [folder for folder in response if isinstance(folder, dict)]
-        if isinstance(response, dict) and isinstance(response.get("folders"), list):
-            return [folder for folder in response["folders"] if isinstance(folder, dict)]
-        raise ResilioApiError("Unexpected folders response from Resilio API")
+        """Fetch all managed folders, normalized to expose an ``id`` key."""
+        payload = await self._async_request("getsyncfolders", params={"discovery": 1})
+        folders = payload.get("folders")
+        if not isinstance(folders, list):
+            raise ResilioApiError("Unexpected folders response from Resilio API")
+        return [
+            {**folder, "id": folder["folderid"]}
+            for folder in folders
+            if isinstance(folder, dict) and "folderid" in folder
+        ]
 
     async def async_get_folder(self, folder_id: str) -> dict[str, Any]:
-        """Fetch a single folder."""
-        response = await self._async_request(
-            "GET",
-            f"/folders/{folder_id}",
-            not_found_error=ResilioFolderNotFoundError,
-        )
-        if not isinstance(response, dict):
-            raise ResilioApiError("Unexpected folder response from Resilio API")
-        return response
+        """Fetch a single folder by id."""
+        for folder in await self.async_get_folders():
+            if str(folder.get("id")) == str(folder_id):
+                return folder
+        raise ResilioFolderNotFoundError(f"Resilio folder not found: {folder_id}")
 
     async def async_add_folder(self, path: str) -> dict[str, Any]:
-        """Create or add a folder for Resilio to manage."""
-        response = await self._async_request("POST", "/folders", json_body={"path": path})
-        if not isinstance(response, dict):
-            raise ResilioApiError("Unexpected folder response from Resilio API")
-        return response
+        """Create a folder for Resilio to manage and return its normalized info.
+
+        ``addsyncfolder`` doesn't reliably echo back the created folder's id,
+        so the folder list is re-fetched and matched by path instead of
+        trusting the add response's shape.
+        """
+        await self._async_request(
+            "addsyncfolder",
+            params={
+                "path": path,
+                "secret": "",
+                "selectivesync": "false",
+                "encrypted": "false",
+            },
+        )
+        for folder in await self.async_get_folders():
+            if folder.get("path") == path:
+                return folder
+        raise ResilioApiError(f"Resilio did not report the folder just added: {path}")
