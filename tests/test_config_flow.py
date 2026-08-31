@@ -54,6 +54,14 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
     )
     assert result["step_id"] == "backup_path"
 
+    # A path outside the Resilio folder warns instead of blocking...
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_BACKUP_PATH: "C:\\HA\\Backups"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    # ...and a repeat submission of the same path confirms it.
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_BACKUP_PATH: "C:\\HA\\Backups"}
     )
@@ -63,6 +71,7 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
     assert result["data"][CONF_FOLDER_PATH] == MOCK_FOLDER["path"]
     assert result["data"][CONF_BACKUP_PATH] == "C:\\HA\\Backups"
     mock_client.add_folder.assert_not_awaited()
+    mock_client.get_share_link.assert_awaited_once()
 
 
 async def test_config_flow_create_new_folder(hass, mock_client) -> None:
@@ -271,3 +280,113 @@ async def test_folder_step_create_new_errors(hass, mock_client, side_effect, exp
     result = await flow.async_step_new_folder({"new_folder_path": "D:\\Sync\\Backups"})
 
     assert result["errors"] == {"base": expected_error}
+
+
+async def test_backup_path_mismatch_allows_different_path_on_confirm(hass, mock_client) -> None:
+    """Confirming a mismatched path a second time uses that path, not the folder's."""
+    assert mock_client is not None
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    first = await flow.async_step_backup_path({CONF_BACKUP_PATH: "C:\\Elsewhere"})
+    assert first["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    second = await flow.async_step_backup_path({CONF_BACKUP_PATH: "C:\\Elsewhere"})
+    assert second["type"] is FlowResultType.CREATE_ENTRY
+    assert second["data"][CONF_BACKUP_PATH] == "C:\\Elsewhere"
+
+
+async def test_backup_path_mismatch_resets_on_different_value(hass, mock_client) -> None:
+    """Changing the path after a warning re-triggers the mismatch check."""
+    assert mock_client is not None
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    first = await flow.async_step_backup_path({CONF_BACKUP_PATH: "C:\\Elsewhere"})
+    assert first["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+    second = await flow.async_step_backup_path({CONF_BACKUP_PATH: "C:\\SomewhereElse"})
+    assert second["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+
+
+async def test_backup_path_matching_folder_skips_warning(hass, mock_client) -> None:
+    """A backup path that already matches the folder's path needs no confirmation."""
+    assert mock_client is not None
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_backup_path_posts_peer_invite_notification(hass, mock_client) -> None:
+    """A non-empty share link is surfaced as a persistent notification with a QR code."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with patch(
+        "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+    ) as notify:
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_called_once()
+    message = notify.call_args.args[1]
+    assert "https://link.resilio.com/#f=test" in message
+    assert "![Peer invite QR code](data:image/png;base64," in message
+
+
+async def test_backup_path_peer_invite_failure_does_not_block_entry(hass, mock_client) -> None:
+    """A failed share-link fetch doesn't prevent the entry from being created."""
+    mock_client.get_share_link.side_effect = ResilioApiError("boom")
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with patch(
+        "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+    ) as notify:
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_not_called()
+
+
+async def test_backup_path_empty_share_link_skips_notification(hass, mock_client) -> None:
+    """An empty share link (Resilio declining to mint one) posts no notification."""
+    mock_client.get_share_link.return_value = ""
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with patch(
+        "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+    ) as notify:
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_not_called()
+
+
+async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client) -> None:
+    """A QR rendering failure still posts the link, just without an image."""
+    mock_client.get_share_link.return_value = "https://link.resilio.com/#f=test"
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    with (
+        patch(
+            "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
+        ) as notify,
+        patch(
+            "custom_components.resilio_backup.config_flow._render_qr_data_uri",
+            side_effect=RuntimeError("boom"),
+        ),
+    ):
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    notify.assert_called_once()
+    message = notify.call_args.args[1]
+    assert "https://link.resilio.com/#f=test" in message
+    assert "data:image/png;base64" not in message

@@ -195,6 +195,44 @@ class ResilioApiClient:
                 return folder
         raise ResilioFolderNotFoundError(f"Resilio folder not found: {folder_id}")
 
+    async def async_get_share_link(
+        self,
+        folder_id: str,
+        folder_name: str,
+        *,
+        permission: int = 3,
+        timelimit: int = 7 * 24 * 3600,
+    ) -> str:
+        """Generate a peer-invite link for a folder, or "" if none was produced.
+
+        Captured live against an unlicensed ``resilio/sync`` container
+        (see ``tools/resilio_capture``, lowlysre/ha-backup-resilio#5):
+        ``permissions`` uses Resilio's own 2 (read-only)/3 (read-write)/
+        4 (owner)/5 (encrypted)/6 (archive) scale, not the 1/2/4 scale some
+        reverse-engineered clients assume. ``askapproval=1`` also isn't
+        usable on a free-tier agent -- it 500s internally
+        (``Failed to create a link of type APPROVE_NEW, because MD is not
+        set``), so links are generated unmoderated instead. A successful
+        call still returns an empty ``value`` if Resilio silently declines
+        to mint one, so callers should treat "" as "no link available"
+        rather than an error.
+        """
+        payload = await self._async_request(
+            "getsynclink",
+            params={
+                "name": folder_name,
+                "folderid": folder_id,
+                "permissions": permission,
+                "timelimit": timelimit,
+                "type": "copy",
+                "linktype": "https",
+                "clicklimit": 0,
+                "askapproval": 0,
+            },
+        )
+        link = payload.get("value")
+        return link if isinstance(link, str) else ""
+
     async def async_add_folder(self, path: str) -> dict[str, Any]:
         """Create a folder for Resilio to manage and return its normalized info.
 

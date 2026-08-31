@@ -307,3 +307,45 @@ async def test_async_add_folder_server_error(aioclient_mock, resilio_client) -> 
     aioclient_mock.get(f"{BASE_URL}/", params={"action": "addsyncfolder"}, status=500)
     with pytest.raises(ResilioApiError):
         await resilio_client.async_add_folder("C:\\Resilio\\Backups")
+
+
+async def test_async_get_share_link_success(aioclient_mock, resilio_client) -> None:
+    """A successful getsynclink call returns its ``value`` link as-is."""
+    link = "https://link.resilio.com/#f=probe&sz=0&t=1&s=SECRET&i=IDENT&e=1788449679&v=2.8&a=3"
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsynclink"},
+        json=webui_action({"value": link}),
+    )
+    assert await resilio_client.async_get_share_link("folder123", "probe") == link
+
+
+async def test_async_get_share_link_empty_value(aioclient_mock, resilio_client) -> None:
+    """Resilio can 200 an empty link (confirmed live: askapproval=1 does this on
+    an unlicensed agent); that's treated as "no link available", not an error.
+    """
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/",
+        params={"action": "getsynclink"},
+        json=webui_action({"value": ""}),
+    )
+    assert await resilio_client.async_get_share_link("folder123", "probe") == ""
+
+
+async def test_async_get_share_link_missing_value(aioclient_mock, resilio_client) -> None:
+    """A response with no ``value`` key at all is treated the same as an empty one."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(
+        f"{BASE_URL}/", params={"action": "getsynclink"}, json=webui_action({})
+    )
+    assert await resilio_client.async_get_share_link("folder123", "probe") == ""
+
+
+async def test_async_get_share_link_server_error(aioclient_mock, resilio_client) -> None:
+    """Unexpected status codes on the link call raise API errors."""
+    mock_token_endpoint(aioclient_mock, BASE_URL)
+    aioclient_mock.get(f"{BASE_URL}/", params={"action": "getsynclink"}, status=500)
+    with pytest.raises(ResilioApiError):
+        await resilio_client.async_get_share_link("folder123", "probe")

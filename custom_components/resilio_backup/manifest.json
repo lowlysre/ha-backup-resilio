@@ -11,6 +11,8 @@
   "documentation": "https://github.com/lowlysre/ha-backup-resilio/blob/main/README.md",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/lowlysre/ha-backup-resilio/issues",
-  "requirements": [],
+  "requirements": [
+    "qrcode[pil]==8.2"
+  ],
   "version": "0.1.0"
 }
