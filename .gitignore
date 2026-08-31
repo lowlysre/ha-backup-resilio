@@ -47,3 +47,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# E2E fixture scratch data
+tools/backup_store_e2e/data/
