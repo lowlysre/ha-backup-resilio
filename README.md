@@ -160,9 +160,23 @@ This integration only writes the local files, tracks metadata, applies retention
 
 Resilio Sync's documented [`/api/v2`](https://github.com/bt-sync/sync_api_sample) REST API is gated behind a paid Business license; a free-tier install rejects it with an HTTP 400 and no body, confirmed against a live agent.
 
-This integration instead drives the same undocumented `/gui/` endpoint the Sync WebUI itself uses: it mints a CSRF token from `/gui/token.html` (Basic Auth) plus the session cookie that comes back with it, then attaches both to every `action=` query call. That's the same approach taken by the reverse-engineered clients [`rslsync`](https://github.com/zhongkechen/python-resilio-sync-unofficial) and [`resilio-sync-cli`](https://github.com/PythonNut/resilio-sync-cli), which remain the only working references for this API; Resilio has never published it. `api.py`'s `_async_fetch_token` and `_async_request` implement this, including a one-shot retry to remint the token if a session expires mid-use.
+This integration instead drives the same undocumented `/gui/` endpoint the Sync WebUI itself uses: it mints a CSRF token from `/gui/token.html` (Basic Auth) plus the session cookie that comes back with it, then attaches both to every `action=` query call. That's the same approach taken by the reverse-engineered clients [`rslsync`](https://github.com/zhongkechen/python-resilio-sync-unofficial) and [`resilio-sync-cli`](https://github.com/PythonNut/resilio-sync-cli), which remain the only working references for this API; Resilio has never published it. [`resilio_client/client.py`](resilio_client/client.py)'s `_async_fetch_token` and `_async_request` implement this, including a one-shot retry to remint the token if a session expires mid-use.
 
 Every `/gui/` action response is a flat dict with a `status` field, where `200` means success; a non-200 status is a logical failure even on an HTTP 200 response.
+
+## Standalone CLI
+
+The Resilio WebUI client this integration talks to has no Home Assistant dependency; it lives in [`resilio_client/`](resilio_client/) as its own installable package, with `custom_components/resilio_backup/api.py` as a thin wrapper that just supplies HA's shared `aiohttp` session. That split lets the same connection/folder logic run standalone, for manual testing or scripting against a Resilio Sync agent without a Home Assistant install:
+
+```console
+$ pip install -e .
+$ resilio-client status --host localhost --port 8888 --username admin --password secret
+$ resilio-client folders --host localhost --port 8888 --username admin --password secret
+$ resilio-client add-folder --host localhost --port 8888 --username admin --password secret --path /mnt/sync/folders/backups
+$ resilio-client share-link --host localhost --port 8888 --username admin --password secret --folder-id <id> --name backups
+```
+
+Every command prints its result as JSON on stdout. `--ssl`/`--no-verify-ssl` mirror the integration's `use_ssl`/`verify_ssl` options. CI (`resilio-client-e2e` in [`combined.yaml`](.github/workflows/combined.yaml)) runs the `status`, `folders`, and `add-folder` commands against a real `resilio/sync` container on every PR, so the CLI (and the client it wraps) stay validated against Resilio's actual behavior, not just mocked responses.
 
 ## Known limitations
 
