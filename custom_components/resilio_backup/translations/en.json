@@ -88,7 +88,7 @@
       "last_updated": {
         "name": "Last updated"
       },
-      "peer_count": {
+      "peer_count_connected": {
         "name": "Connected peers"
       },
       "peer_count_total": {

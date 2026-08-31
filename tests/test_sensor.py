@@ -10,7 +10,7 @@ from custom_components.resilio_backup.sensor import (
     ResilioFileCountSensor,
     ResilioFolderSizeSensor,
     ResilioLastUpdatedSensor,
-    ResilioPeerCountSensor,
+    ResilioPeerCountConnectedSensor,
     ResilioPeerCountTotalSensor,
     ResilioSyncStateSensor,
 )
@@ -60,9 +60,9 @@ def test_size_file_and_peer_sensors(hass) -> None:
     file_count_sensor = ResilioFileCountSensor(coordinator, entry)
     assert file_count_sensor.native_value == 16
     assert file_count_sensor.translation_key == "file_count"
-    peer_count_sensor = ResilioPeerCountSensor(coordinator, entry)
+    peer_count_sensor = ResilioPeerCountConnectedSensor(coordinator, entry)
     assert peer_count_sensor.native_value == 3
-    assert peer_count_sensor.translation_key == "peer_count"
+    assert peer_count_sensor.translation_key == "peer_count_connected"
     peer_count_total_sensor = ResilioPeerCountTotalSensor(coordinator, entry)
     assert peer_count_total_sensor.native_value == 5
     assert peer_count_total_sensor.translation_key == "peer_count_total"

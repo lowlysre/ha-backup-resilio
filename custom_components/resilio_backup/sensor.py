@@ -92,11 +92,11 @@ class ResilioFileCountSensor(ResilioEntity, SensorEntity):
         return self.coordinator.data.files
 
 
-class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
+class ResilioPeerCountConnectedSensor(ResilioEntity, SensorEntity):
     """Expose the connected peer count."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_translation_key = "peer_count"
+    _attr_translation_key = "peer_count_connected"
 
     def __init__(
         self,
@@ -105,7 +105,7 @@ class ResilioPeerCountSensor(ResilioEntity, SensorEntity):
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
-        self._attr_unique_id = f"{entry.entry_id}_peer_count"
+        self._attr_unique_id = f"{entry.entry_id}_peer_count_connected"
 
     @property
     @override
@@ -171,7 +171,7 @@ async def async_setup_entry(
             ResilioSyncStateSensor(coordinator, entry),
             ResilioFolderSizeSensor(coordinator, entry),
             ResilioFileCountSensor(coordinator, entry),
-            ResilioPeerCountSensor(coordinator, entry),
+            ResilioPeerCountConnectedSensor(coordinator, entry),
             ResilioPeerCountTotalSensor(coordinator, entry),
             ResilioLastUpdatedSensor(coordinator, entry),
         ]
