@@ -22,7 +22,7 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     """Expose the current folder sync state."""
 
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = ["in sync", "syncing", "paused", "error", "unknown"]
+    _attr_options = ["in_sync", "syncing", "paused", "error", "unknown"]
     _attr_translation_key = "sync_state"
 
     def __init__(
@@ -38,7 +38,7 @@ class ResilioSyncStateSensor(ResilioEntity, SensorEntity):
     @override
     def native_value(self) -> str:
         """Return the current sync state."""
-        state = self.coordinator.data.state.lower()
+        state = self.coordinator.data.state.lower().replace(" ", "_")
         return state if state in self._attr_options else "unknown"
 
 

@@ -9,7 +9,7 @@ from custom_components.resilio_backup.binary_sensor import ResilioConnectivityBi
 from tests.common import build_mock_entry
 
 
-def build_coordinator(state: str = "in sync", success: bool = True) -> SimpleNamespace:
+def build_coordinator(state: str = "in_sync", success: bool = True) -> SimpleNamespace:
     """Create a coordinator stub."""
     return SimpleNamespace(
         data=ResilioFolderStatus(

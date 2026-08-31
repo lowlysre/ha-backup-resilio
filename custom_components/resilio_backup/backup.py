@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PRUNE_ENABLED,
     DOMAIN,
+    EVENT_BACKUPS_PRUNED,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -233,4 +234,10 @@ async def async_prune_backups(hass: HomeAssistant, entry: ConfigEntry) -> int:
     for backup in backups[max_backups:]:
         await agent.async_delete_backup(backup.backup_id)
         deleted += 1
+
+    if deleted:
+        hass.bus.async_fire(
+            EVENT_BACKUPS_PRUNED,
+            {"entry_id": entry.entry_id, "deleted": deleted},
+        )
     return deleted

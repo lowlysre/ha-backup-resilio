@@ -65,7 +65,7 @@
         "name": "Sync state",
         "state": {
           "error": "Error",
-          "in sync": "In sync",
+          "in_sync": "In sync",
           "paused": "Paused",
           "syncing": "Syncing",
           "unknown": "Unknown"
