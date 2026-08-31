@@ -235,7 +235,13 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle reconfiguration of the connection details."""
+        """Reconfigure connection details, then the synced folder and backup path.
+
+        Validating the connection here just moves on to the same
+        folder/backup_path steps the initial setup uses, pre-selecting the
+        entry's current folder so a user who only wants to tweak the
+        connection can click straight through unchanged.
+        """
         reconfigure_entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
 
@@ -249,11 +255,12 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         and entry.unique_id == new_unique_id
                     ):
                         return self.async_abort(reason="already_configured")
-                return self.async_update_reload_and_abort(
-                    reconfigure_entry,
-                    unique_id=new_unique_id,
-                    data_updates=user_input,
-                )
+                self._data = {**reconfigure_entry.data, **user_input}
+                self._folder = {
+                    "id": reconfigure_entry.data.get(CONF_FOLDER_ID),
+                    "path": reconfigure_entry.data.get(CONF_FOLDER_PATH),
+                }
+                return await self.async_step_folder()
 
         return self.async_show_form(
             step_id="reconfigure",
@@ -283,7 +290,14 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not folders and user_input is None and not errors:
             errors["base"] = "no_folders"
 
-        folder_choice_default = CREATE_NEW_VALUE if not folders else next(iter(folder_lookup))
+        current_folder_id = str(self._folder["id"]) if self._folder.get("id") else None
+        if current_folder_id and current_folder_id in folder_lookup:
+            # Reconfiguring an existing entry: default to its current folder.
+            folder_choice_default = current_folder_id
+        elif not folders:
+            folder_choice_default = CREATE_NEW_VALUE
+        else:
+            folder_choice_default = next(iter(folder_lookup))
 
         return self.async_show_form(
             step_id="folder",
@@ -372,14 +386,21 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors[CONF_BACKUP_PATH] = "path_mismatch"
             else:
                 await self._async_notify_peer_invite()
+                final_data = {
+                    **self._data,
+                    CONF_FOLDER_ID: str(self._folder["id"]),
+                    CONF_FOLDER_PATH: folder_path,
+                    CONF_BACKUP_PATH: backup_path,
+                }
+                if self.source == config_entries.SOURCE_RECONFIGURE:
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        unique_id=f"{self._data[CONF_HOST]}:{self._data[CONF_PORT]}",
+                        data=final_data,
+                    )
                 return self.async_create_entry(
                     title=f"Resilio Sync ({self._data[CONF_HOST]})",
-                    data={
-                        **self._data,
-                        CONF_FOLDER_ID: str(self._folder["id"]),
-                        CONF_FOLDER_PATH: folder_path,
-                        CONF_BACKUP_PATH: backup_path,
-                    },
+                    data=final_data,
                 )
 
         return self.async_show_form(
@@ -388,7 +409,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(
                         CONF_BACKUP_PATH,
-                        default=(user_input or {}).get(CONF_BACKUP_PATH) or folder_path,
+                        default=(user_input or {}).get(CONF_BACKUP_PATH)
+                        or self._data.get(CONF_BACKUP_PATH)
+                        or folder_path,
                     ): str,
                 }
             ),

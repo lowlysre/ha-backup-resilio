@@ -55,7 +55,7 @@
           "username": "Username",
           "verify_ssl": "Verify SSL certificate"
         },
-        "description": "Update the connection details for this Resilio Sync endpoint.",
+        "description": "Update the connection details for this Resilio Sync endpoint. You'll be able to change the synced folder and backup path next.",
         "title": "Reconfigure Resilio Sync"
       },
       "user": {
