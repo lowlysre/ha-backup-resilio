@@ -91,6 +91,9 @@
       "peer_count": {
         "name": "Connected peers"
       },
+      "peer_count_total": {
+        "name": "Configured peers"
+      },
       "sync_state": {
         "name": "Sync state",
         "state": {

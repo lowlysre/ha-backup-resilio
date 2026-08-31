@@ -11,6 +11,7 @@ from custom_components.resilio_backup.sensor import (
     ResilioFolderSizeSensor,
     ResilioLastUpdatedSensor,
     ResilioPeerCountSensor,
+    ResilioPeerCountTotalSensor,
     ResilioSyncStateSensor,
 )
 from tests.common import build_mock_entry
@@ -28,6 +29,7 @@ def build_coordinator(state: str = "in_sync") -> SimpleNamespace:
             size=2048,
             files=16,
             peers=3,
+            peers_total=5,
             state=state,
             last_success=LAST_SUCCESS,
         ),
@@ -61,6 +63,9 @@ def test_size_file_and_peer_sensors(hass) -> None:
     peer_count_sensor = ResilioPeerCountSensor(coordinator, entry)
     assert peer_count_sensor.native_value == 3
     assert peer_count_sensor.translation_key == "peer_count"
+    peer_count_total_sensor = ResilioPeerCountTotalSensor(coordinator, entry)
+    assert peer_count_total_sensor.native_value == 5
+    assert peer_count_total_sensor.translation_key == "peer_count_total"
 
 
 def test_last_updated_sensor(hass) -> None:

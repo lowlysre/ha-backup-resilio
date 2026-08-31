@@ -28,7 +28,7 @@ from .const import (
     EVENT_PEER_COUNT_CHANGED,
     ISSUE_FOLDER_NOT_FOUND,
 )
-from .folder_state import derive_sync_state, safe_int
+from .folder_state import derive_sync_state, peer_counts, safe_int
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class ResilioFolderStatus:
     size: int
     files: int
     peers: int
+    peers_total: int
     state: str
     last_success: datetime = field(default_factory=dt_util.utcnow)
 
@@ -119,6 +120,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
 
         ir.async_delete_issue(self.hass, DOMAIN, self._folder_not_found_issue_id)
 
+        peers, peers_total = peer_counts(folder)
         status = ResilioFolderStatus(
             folder_id=str(folder.get("id", self._entry.data[CONF_FOLDER_ID])),
             name=str(
@@ -129,7 +131,8 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             path=str(folder.get("path", "")),
             size=_safe_int(folder.get("size")),
             files=_safe_int(folder.get("files")),
-            peers=_safe_int(folder.get("peers")),
+            peers=peers,
+            peers_total=peers_total,
             state=derive_sync_state(folder),
             last_success=dt_util.utcnow(),
         )

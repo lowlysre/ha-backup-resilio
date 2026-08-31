@@ -80,6 +80,7 @@ The integration also creates:
 | Folder size | `sensor` | Total size of the synced folder, in bytes |
 | File count | `sensor` | Number of files currently in the synced folder |
 | Peer count | `sensor` | Number of connected Resilio peers for the folder |
+| Configured peer count | `sensor` | Number of Resilio peers configured for the folder, connected or not |
 | Last updated | `sensor` | Timestamp of the last successful poll of the Resilio API |
 | Connectivity | `binary_sensor` | Whether the Resilio API was reachable on the last poll |
 

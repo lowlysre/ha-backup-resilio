@@ -54,6 +54,7 @@ async def test_coordinator_success(hass) -> None:
     assert data.size == 2048
     assert data.files == 16
     assert data.peers == 3
+    assert data.peers_total == 3
     assert data.state == "in_sync"
     assert data.last_success <= dt_util.utcnow()
 
@@ -78,7 +79,9 @@ async def test_coordinator_peers_as_list(hass) -> None:
     """A `peers` field shaped as a list of peer objects counts its entries.
 
     Some Resilio versions return `peers` as a list of peer dicts instead of a
-    count, which used to crash `int()` in the coordinator.
+    count, which used to crash `int()` in the coordinator. Without a separate
+    `onlinepeerscount` field there's no way to tell connected apart from
+    configured, so both collapse to the list length.
     """
     entry = build_mock_entry(hass)
     client = AsyncMock()
@@ -91,6 +94,30 @@ async def test_coordinator_peers_as_list(hass) -> None:
     data = await coordinator.async_test_update()
 
     assert data.peers == 2
+    assert data.peers_total == 2
+
+
+async def test_coordinator_distinguishes_connected_from_total_peers(hass) -> None:
+    """`onlinepeerscount` gives the connected count separately from the peer list.
+
+    Real Resilio `/gui/` responses always carry both fields (confirmed
+    against a live capture, see tools/resilio_capture/capture.py); one peer
+    can be configured but offline, which `peers` (connected) alone can't
+    show.
+    """
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.return_value = {
+        **MOCK_FOLDER,
+        "peers": [{"name": "peer-a"}, {"name": "peer-b"}],
+        "onlinepeerscount": 1,
+    }
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    data = await coordinator.async_test_update()
+
+    assert data.peers == 1
+    assert data.peers_total == 2
 
 
 @pytest.mark.parametrize(
