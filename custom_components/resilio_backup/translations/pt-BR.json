@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Este endpoint do Resilio já está configurado.",
       "reauth_successful": "Reautenticação bem-sucedida.",
-      "reconfigure_successful": "Reconfiguração bem-sucedida."
+      "reconfigure_successful": "Reconfiguração bem-sucedida.",
+      "reconfigure_successful_peer_invite": "Reconfiguração bem-sucedida. Confira as notificações para o link de convite de par e o código QR."
     },
     "error": {
       "cannot_connect": "Falha ao conectar à API do Resilio.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Caminho do backup"
+          "backup_path": "Caminho do backup",
+          "send_peer_invite": "Enviar uma notificação de convite de par"
+        },
+        "data_description": {
+          "send_peer_invite": "Adiciona uma notificação com um link de adesão e código QR para esta pasta. Qualquer pessoa com o link pode entrar como par, então desative isso se você já adicionou os pares de que precisa."
         },
         "description": "Este é o caminho local no qual o Home Assistant grava os arquivos `.tar`/`.json` de cada backup. O Resilio então replica tudo o que encontra dentro de sua própria pasta para seus outros dispositivos, então este caminho normalmente deve ser o caminho próprio da pasta do Resilio (pré-preenchido abaixo) ou um local dentro dela.\n\nPasta selecionada: **{folder_name}** ({folder_path})",
         "title": "Escolher caminho do backup"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Conectividade"
+      },
+      "performance_warning": {
+        "name": "Aviso de desempenho"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Pares configurados"
+      },
+      "resilio_version": {
+        "name": "Versão do Resilio Sync"
       },
       "sync_state": {
         "name": "Estado de sincronização",

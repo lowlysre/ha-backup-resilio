@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Este endpoint de Resilio ya está configurado.",
       "reauth_successful": "La reautenticación se realizó correctamente.",
-      "reconfigure_successful": "La reconfiguración se realizó correctamente."
+      "reconfigure_successful": "La reconfiguración se realizó correctamente.",
+      "reconfigure_successful_peer_invite": "La reconfiguración se realizó correctamente. Consulta las notificaciones para ver el enlace de invitación de par y el código QR."
     },
     "error": {
       "cannot_connect": "No se pudo conectar a la API de Resilio.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Ruta de copia de seguridad"
+          "backup_path": "Ruta de copia de seguridad",
+          "send_peer_invite": "Enviar una notificación de invitación de par"
+        },
+        "data_description": {
+          "send_peer_invite": "Agrega una notificación con un enlace de unión y un código QR para esta carpeta. Cualquiera con el enlace puede unirse como par, así que desactívalo si ya agregaste los pares que necesitas."
         },
         "description": "Esta es la ruta local en la que Home Assistant escribe los archivos `.tar`/`.json` de cada copia de seguridad. Resilio luego replica todo lo que encuentra dentro de su propia carpeta a tus otros dispositivos, por lo que esta ruta normalmente debería ser la ruta propia de la carpeta de Resilio (rellenada previamente abajo) o una ubicación dentro de ella.\n\nCarpeta seleccionada: **{folder_name}** ({folder_path})",
         "title": "Elegir ruta de copia de seguridad"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Conectividad"
+      },
+      "performance_warning": {
+        "name": "Advertencia de rendimiento"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Pares configurados"
+      },
+      "resilio_version": {
+        "name": "Versión de Resilio Sync"
       },
       "sync_state": {
         "name": "Estado de sincronización",

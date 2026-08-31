@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Dieser Resilio-Endpunkt ist bereits konfiguriert.",
       "reauth_successful": "Erneute Authentifizierung erfolgreich.",
-      "reconfigure_successful": "Neukonfiguration erfolgreich."
+      "reconfigure_successful": "Neukonfiguration erfolgreich.",
+      "reconfigure_successful_peer_invite": "Neukonfiguration erfolgreich. Sieh in den Benachrichtigungen nach dem Peer-Einladungslink und dem QR-Code."
     },
     "error": {
       "cannot_connect": "Verbindung zur Resilio-API fehlgeschlagen.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Backup-Pfad"
+          "backup_path": "Backup-Pfad",
+          "send_peer_invite": "Peer-Einladungsbenachrichtigung senden"
+        },
+        "data_description": {
+          "send_peer_invite": "Fügt eine Benachrichtigung mit einem Beitrittslink und QR-Code für diesen Ordner hinzu. Jeder mit dem Link kann als Peer beitreten. Deaktiviere dies, wenn du bereits alle benötigten Peers hinzugefügt hast."
         },
         "description": "Dies ist der lokale Pfad, in den Home Assistant die `.tar`/`.json`-Dateien jedes Backups schreibt. Resilio repliziert dann alles, was sich in seinem eigenen Ordner befindet, auf deine anderen Geräte. Dieser Pfad sollte daher normalerweise der eigene Pfad des Resilio-Ordners sein (unten vorausgefüllt) oder sich innerhalb davon befinden.\n\nAusgewählter Ordner: **{folder_name}** ({folder_path})",
         "title": "Backup-Pfad wählen"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Konnektivität"
+      },
+      "performance_warning": {
+        "name": "Leistungswarnung"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Konfigurierte Peers"
+      },
+      "resilio_version": {
+        "name": "Resilio Sync-Version"
       },
       "sync_state": {
         "name": "Synchronisierungsstatus",

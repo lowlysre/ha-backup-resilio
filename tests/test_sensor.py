@@ -13,13 +13,16 @@ from custom_components.resilio_backup.sensor import (
     ResilioPeerCountConnectedSensor,
     ResilioPeerCountTotalSensor,
     ResilioSyncStateSensor,
+    ResilioVersionSensor,
 )
 from tests.common import build_mock_entry
 
 LAST_SUCCESS = datetime(2026, 8, 30, 23, 0, 0, tzinfo=timezone.utc)
 
 
-def build_coordinator(state: str = "in_sync") -> SimpleNamespace:
+def build_coordinator(
+    state: str = "in_sync", resilio_version: str | None = None
+) -> SimpleNamespace:
     """Create a coordinator stub."""
     return SimpleNamespace(
         data=ResilioFolderStatus(
@@ -32,6 +35,7 @@ def build_coordinator(state: str = "in_sync") -> SimpleNamespace:
             peers_total=5,
             state=state,
             last_success=LAST_SUCCESS,
+            resilio_version=resilio_version,
         ),
         last_update_success=True,
     )
@@ -74,3 +78,18 @@ def test_last_updated_sensor(hass) -> None:
     sensor = ResilioLastUpdatedSensor(build_coordinator(), entry)
     assert sensor.native_value == LAST_SUCCESS
     assert sensor.translation_key == "last_updated"
+
+
+def test_version_sensor_reports_probed_value(hass) -> None:
+    """The version sensor surfaces whatever the coordinator last probed."""
+    entry = build_mock_entry(hass)
+    sensor = ResilioVersionSensor(build_coordinator(resilio_version="2.7.2.1370"), entry)
+    assert sensor.native_value == "2.7.2.1370"
+    assert sensor.translation_key == "resilio_version"
+
+
+def test_version_sensor_none_when_probe_never_succeeded(hass) -> None:
+    """The version sensor is None if the probe hasn't succeeded yet."""
+    entry = build_mock_entry(hass)
+    sensor = ResilioVersionSensor(build_coordinator(), entry)
+    assert sensor.native_value is None

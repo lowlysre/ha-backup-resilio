@@ -57,6 +57,12 @@ async def test_diagnostics_includes_webui_health(hass, aioclient_mock) -> None:
 async def test_diagnostics_webui_health_captures_action_failure(hass, aioclient_mock) -> None:
     """A single failing health probe reports its error without failing the rest."""
     entry = await setup_integration(hass, aioclient_mock)
+    # setup_integration's own version/getperformancewarnings mocks (needed for
+    # the coordinator's first refresh) would otherwise shadow the failure
+    # mock below, since the mocker matches whichever registration came
+    # first. The diagnostics probes below don't need another coordinator
+    # refresh, so a clean slate is safe here.
+    aioclient_mock.clear_requests()
     _mock_health_actions(aioclient_mock, skip={"getperformancewarnings"})
     aioclient_mock.get(
         f"{BASE_URL}/",

@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "Ce point de terminaison Resilio est déjà configuré.",
       "reauth_successful": "La réauthentification a réussi.",
-      "reconfigure_successful": "La reconfiguration a réussi."
+      "reconfigure_successful": "La reconfiguration a réussi.",
+      "reconfigure_successful_peer_invite": "La reconfiguration a réussi. Consultez les notifications pour le lien d'invitation de pair et le code QR."
     },
     "error": {
       "cannot_connect": "Échec de la connexion à l'API Resilio.",
@@ -15,7 +16,11 @@
     "step": {
       "backup_path": {
         "data": {
-          "backup_path": "Chemin de sauvegarde"
+          "backup_path": "Chemin de sauvegarde",
+          "send_peer_invite": "Envoyer une notification d'invitation de pair"
+        },
+        "data_description": {
+          "send_peer_invite": "Ajoute une notification avec un lien pour rejoindre et un code QR pour ce dossier. Toute personne disposant du lien peut rejoindre en tant que pair, désactivez cette option si vous avez déjà ajouté les pairs dont vous avez besoin."
         },
         "description": "Il s'agit du chemin local dans lequel Home Assistant écrit les fichiers `.tar`/`.json` de chaque sauvegarde. Resilio réplique ensuite tout ce qu'il trouve dans son propre dossier vers vos autres appareils. Ce chemin doit donc normalement être le chemin propre du dossier Resilio (pré-rempli ci-dessous) ou un emplacement à l'intérieur de celui-ci.\n\nDossier sélectionné : **{folder_name}** ({folder_path})",
         "title": "Choisir le chemin de sauvegarde"
@@ -76,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Connectivité"
+      },
+      "performance_warning": {
+        "name": "Avertissement de performance"
       }
     },
     "sensor": {
@@ -93,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Pairs configurés"
+      },
+      "resilio_version": {
+        "name": "Version de Resilio Sync"
       },
       "sync_state": {
         "name": "État de synchronisation",

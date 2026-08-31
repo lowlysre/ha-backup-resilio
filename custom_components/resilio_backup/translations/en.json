@@ -81,6 +81,9 @@
     "binary_sensor": {
       "connectivity": {
         "name": "Connectivity"
+      },
+      "performance_warning": {
+        "name": "Performance warning"
       }
     },
     "sensor": {
@@ -98,6 +101,9 @@
       },
       "peer_count_total": {
         "name": "Configured peers"
+      },
+      "resilio_version": {
+        "name": "Resilio Sync version"
       },
       "sync_state": {
         "name": "Sync state",
