@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -15,6 +16,8 @@ from custom_components.resilio_backup.api import (
     ResilioFolderNotFoundError,
 )
 from custom_components.resilio_backup.const import (
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     EVENT_FILE_COUNT_CHANGED,
     EVENT_PEER_COUNT_CHANGED,
 )
@@ -50,6 +53,22 @@ async def test_coordinator_success(hass) -> None:
     assert data.peers == 3
     assert data.state == "in_sync"
     assert data.last_success <= dt_util.utcnow()
+
+
+def test_coordinator_uses_default_scan_interval(hass) -> None:
+    """The coordinator polls at the default interval when unset."""
+    entry = build_mock_entry(hass)
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, AsyncMock())
+
+    assert coordinator.update_interval.total_seconds() == DEFAULT_SCAN_INTERVAL
+
+
+def test_coordinator_uses_configured_scan_interval(hass) -> None:
+    """The coordinator honors a custom polling interval option."""
+    entry = build_mock_entry(hass, options={CONF_SCAN_INTERVAL: 300})
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, AsyncMock())
+
+    assert coordinator.update_interval.total_seconds() == 300
 
 
 async def test_coordinator_peers_as_list(hass) -> None:
@@ -117,7 +136,6 @@ async def test_coordinator_derives_sync_state(hass, overrides, expected_state) -
     "exception",
     [
         ResilioConnectionError("down"),
-        ResilioAuthError("bad auth"),
         ResilioFolderNotFoundError("missing"),
     ],
 )
@@ -129,6 +147,17 @@ async def test_coordinator_failures_map_to_update_failed(hass, exception) -> Non
     coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
 
     with pytest.raises(UpdateFailed):
+        await coordinator.async_test_update()
+
+
+async def test_coordinator_auth_failure_triggers_reauth(hass) -> None:
+    """An auth rejection raises ConfigEntryAuthFailed to trigger the reauth flow."""
+    entry = build_mock_entry(hass)
+    client = AsyncMock()
+    client.async_get_folder.side_effect = ResilioAuthError("bad auth")
+    coordinator = ExposedResilioDataUpdateCoordinator(hass, entry, client)
+
+    with pytest.raises(ConfigEntryAuthFailed):
         await coordinator.async_test_update()
 
 

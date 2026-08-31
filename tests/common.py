@@ -16,11 +16,13 @@ from custom_components.resilio_backup.const import (
     CONF_FOLDER_PATH,
     CONF_MAX_BACKUPS,
     CONF_PRUNE_ENABLED,
+    CONF_SCAN_INTERVAL,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
     DEFAULT_PRUNE_ENABLED,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
 
@@ -127,6 +129,7 @@ async def setup_integration(hass, aioclient_mock, **entry_overrides) -> MockConf
         {
             CONF_MAX_BACKUPS: DEFAULT_MAX_BACKUPS,
             CONF_PRUNE_ENABLED: DEFAULT_PRUNE_ENABLED,
+            CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
         },
     )
     entry = build_mock_entry(
