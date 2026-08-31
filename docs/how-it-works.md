@@ -11,10 +11,7 @@ flowchart LR
 ```
 
 > [!NOTE]
-> This diagram renders on GitHub.com. HACS's in-app README viewer uses its own
-> markdown renderer, which doesn't support Mermaid, so this block shows as
-> plain text there instead of a rendered diagram — see the rest of this page
-> for the same flow described in words.
+> This diagram renders on GitHub.com. HACS's in-app README viewer uses its own markdown renderer, which doesn't support Mermaid, so it shows this block as plain text instead. The rest of this page describes the same flow in words.
 
 Each backup uses two files in the configured directory:
 
