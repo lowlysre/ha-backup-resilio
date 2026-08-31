@@ -48,6 +48,7 @@ from .const import (
     DOMAIN,
     MIN_SCAN_INTERVAL,
 )
+from .folder_state import derive_sync_state, peer_counts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +71,24 @@ def _render_qr_data_uri(link: str) -> str:
 CONF_FOLDER_CHOICE = "folder_choice"
 CONF_NEW_FOLDER_PATH = "new_folder_path"
 CREATE_NEW_VALUE = "__create_new__"
+
+# Plain Unicode symbols (not colorful emoji) prefixed to each folder option's
+# label, so the sync state is visible without opening the folder.
+_SYNC_STATE_SYMBOLS = {
+    "in_sync": "\u2713",  # check mark
+    "syncing": "\u21bb",  # clockwise open circle arrow
+    "paused": "\u23f8",  # pause symbol
+    "error": "\u2717",  # ballot x
+    "unknown": "?",
+}
+
+
+def _folder_option_label(folder: dict[str, Any]) -> str:
+    """Build a folder picker label with sync state, connected/total peers."""
+    name = str(folder.get("name") or folder.get("path") or folder.get("id"))
+    symbol = _SYNC_STATE_SYMBOLS[derive_sync_state(folder)]
+    connected, total = peer_counts(folder)
+    return f"{symbol} {name} ({connected}/{total} peers connected)"
 
 
 def _strip_url_scheme(host: str) -> str:
@@ -318,11 +337,7 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 *[
                                     SelectOptionDict(
                                         value=str(folder["id"]),
-                                        label=str(
-                                            folder.get("name")
-                                            or folder.get("path")
-                                            or folder["id"]
-                                        ),
+                                        label=_folder_option_label(folder),
                                     )
                                     for folder in folders
                                     if "id" in folder

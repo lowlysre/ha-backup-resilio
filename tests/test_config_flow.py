@@ -110,6 +110,21 @@ async def test_config_flow_create_new_folder(hass, mock_client) -> None:
     mock_client.add_folder.assert_awaited_once_with("D:\\Sync\\Backups")
 
 
+async def test_config_flow_folder_options_show_state_and_peers(hass, mock_client) -> None:
+    """The folder picker labels show a sync-state symbol and peer counts."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], MOCK_USER_INPUT
+    )
+    assert result["step_id"] == "folder"
+
+    options = result["data_schema"].schema["folder_choice"].config["options"]
+    folder_option = next(opt for opt in options if opt["value"] == MOCK_FOLDER["id"])
+    assert folder_option["label"] == "\u2713 Home Assistant Backups (3/3 peers connected)"
+
+
 async def test_config_flow_cannot_connect(hass, mock_client) -> None:
     """Connection errors surface to the user."""
     mock_client.get_os.side_effect = ResilioConnectionError("down")

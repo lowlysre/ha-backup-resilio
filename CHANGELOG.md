@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `quality_scale.yaml` self-assessment tracking this integration's alignment with Home Assistant's Integration Quality Scale.
 - A repair issue when the configured Resilio folder is missing or renamed, since retrying the poll won't fix it.
 - Standalone `resilio-client` CLI (`resilio_client/`) exposing the Resilio WebUI client's `status`/`folders`/`add-folder`/`share-link` operations with no Home Assistant dependency, plus a CI job that runs it against a live `resilio/sync` container on every PR.
+- Diagnostics now include live WebUI health probes (`version`, `getappinfo`, `getperformancewarnings`, `getstatuses`) captured at report time, independent of the coordinator's cached data, so a failing coordinator still surfaces why.
+- The config flow's folder picker now shows each folder's sync-state symbol and connected/total peer counts (e.g. "✓ Backups (2/3 peers connected)"), so you can tell folders apart without opening the Resilio WebUI.
 
 ### Changed
 

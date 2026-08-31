@@ -178,6 +178,28 @@ class ResilioClient:
         """Fetch system info as a connectivity and credentials check."""
         return await self._async_request("getsysteminfo")
 
+    async def async_get_app_info(self) -> dict[str, Any]:
+        """Fetch lightweight server application info (cheaper than ``getsysteminfo``)."""
+        return await self._async_request("getappinfo")
+
+    async def async_get_version(self) -> dict[str, Any]:
+        """Fetch the Resilio Sync server version: the cheapest reachability probe."""
+        return await self._async_request("version")
+
+    async def async_get_performance_warnings(self) -> dict[str, Any]:
+        """Fetch Resilio's own degraded-state warnings (e.g. low disk, stalled sync).
+
+        This is the closest thing to a real health check the WebUI API offers:
+        unlike ``getsysteminfo``/``getappinfo``/``version``, which only prove
+        the agent is reachable, this reports whether Resilio itself considers
+        something wrong.
+        """
+        return await self._async_request("getperformancewarnings")
+
+    async def async_get_statuses(self) -> dict[str, Any]:
+        """Fetch server-side status statistics."""
+        return await self._async_request("getstatuses")
+
     async def async_get_folders(self) -> list[dict[str, Any]]:
         """Fetch all managed folders, normalized to expose an ``id`` key."""
         payload = await self._async_request("getsyncfolders", params={"discovery": 1})
