@@ -1,6 +1,9 @@
 services:
   resilio:
-    image: resilio/sync
+    # RESILIO_IMAGE_TAG lets CI (and local runs) pin a specific Resilio Sync
+    # release to test against; defaults to a known-good tag so a bare
+    # `docker compose up -d` still works standalone.
+    image: resilio/sync:${RESILIO_IMAGE_TAG:-2.8.1}
     container_name: resilio_client_e2e
     ports:
       - "127.0.0.1:8888:8888"
