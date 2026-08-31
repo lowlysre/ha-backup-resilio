@@ -1,0 +1,24 @@
+services:
+  peer-a:
+    image: resilio/sync
+    container_name: resilio_capture_peer_a
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ./sync.conf.peer-a:/mnt/sync/sync.conf:ro
+      - peer-a-data:/mnt/sync
+    restart: "no"
+
+  peer-b:
+    image: resilio/sync
+    container_name: resilio_capture_peer_b
+    ports:
+      - "127.0.0.1:8889:8888"
+    volumes:
+      - ./sync.conf.peer-b:/mnt/sync/sync.conf:ro
+      - peer-b-data:/mnt/sync
+    restart: "no"
+
+volumes:
+  peer-a-data:
+  peer-b-data:

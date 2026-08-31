@@ -1,0 +1,19 @@
+{
+    "device_name" : "peer-b",
+    "listening_port" : 55556,
+    "agree_to_EULA" : "yes",
+    "storage_path" : "/mnt/sync/config",
+    "vendor" : "docker",
+    "display_new_version": false,
+
+    "directory_root_policy" : "belowroot",
+    "directory_root" : "/mnt/",
+
+    "webui" :
+    {
+        "listen" : "0.0.0.0:8888",
+        "login" : "admin",
+        "password" : "capture-secret",
+        "dir_whitelist" : [ "/mnt/sync/folders", "/mnt/mounted_folders" ]
+    }
+}
