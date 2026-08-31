@@ -40,6 +40,7 @@ from .const import (
     CONF_SEND_PEER_INVITE,
     CONF_USE_SSL,
     CONF_VERIFY_SSL,
+    DATA_PENDING_LOCATIONS_CHECK,
     DEFAULT_MAX_BACKUPS,
     DEFAULT_PORT,
     DEFAULT_PRUNE_ENABLED,
@@ -431,8 +432,21 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_BACKUP_PATH: backup_path,
                 }
                 if self.source == config_entries.SOURCE_RECONFIGURE:
+                    reconfigure_entry = self._get_reconfigure_entry()
+                    connection_changed = {
+                        key: value
+                        for key, value in final_data.items()
+                        if key != DATA_PENDING_LOCATIONS_CHECK
+                    } != {
+                        key: value
+                        for key, value in reconfigure_entry.data.items()
+                        if key != DATA_PENDING_LOCATIONS_CHECK
+                    }
+                    if connection_changed:
+                        final_data[DATA_PENDING_LOCATIONS_CHECK] = True
+                        self._notify_locations_reload()
                     return self.async_update_reload_and_abort(
-                        self._get_reconfigure_entry(),
+                        reconfigure_entry,
                         unique_id=f"{self._data[CONF_HOST]}:{self._data[CONF_PORT]}",
                         data=final_data,
                         reason=(
@@ -446,7 +460,9 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         # lowlysre/ha-backup-resilio#30): it shows up under
                         # "Unavailable locations" until a full HA restart.
                         # Skipping the reload when nothing actually changed
-                        # avoids that window entirely.
+                        # avoids that window entirely. A real value change
+                        # still needs the reload, so the notifications above
+                        # cover that case instead.
                         reload_even_if_entry_is_unchanged=False,
                     )
                 return self.async_create_entry(
@@ -519,6 +535,30 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             notification_id=f"{DOMAIN}_peer_invite_{self._folder['id']}",
         )
         return True
+
+    def _notify_locations_reload(self) -> None:
+        """Warn that a reload can briefly drop this integration from backup Locations.
+
+        Home Assistant's backup manager rebuilds its whole agent list on
+        every unload/setup cycle, and this integration's agent can lose its
+        slot in that window (lowlysre/ha-backup-resilio#30). A same-values
+        reconfigure skips the reload entirely (see
+        ``reload_even_if_entry_is_unchanged=False`` above), but a real value
+        change still needs it, so warn now and again after the next restart
+        (``_async_handle_pending_locations_check`` in ``__init__.py``).
+        """
+        persistent_notification.async_create(
+            self.hass,
+            (
+                "Home Assistant needs to reload Resilio Backup for this "
+                "change, and it can briefly disappear from Settings > "
+                "Backups > Locations while that happens. You'll get a "
+                "reminder to check Locations after your next full Home "
+                "Assistant restart."
+            ),
+            title="Resilio Backup: restart required for backup locations",
+            notification_id=f"{DOMAIN}_locations_reload_{self._get_reconfigure_entry().entry_id}",
+        )
 
 
 class ResilioBackupOptionsFlow(config_entries.OptionsFlowWithReload):

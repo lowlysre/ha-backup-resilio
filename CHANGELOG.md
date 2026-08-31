@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sensors and the binary sensor now declare `PARALLEL_UPDATES = 0` since they're coordinator-backed and read-only.
 - Authentication failures now raise `ConfigEntryAuthFailed` instead of a generic update failure, so Home Assistant prompts for reauthentication.
 - Reconfiguring with unchanged values no longer forces a config entry reload. Home Assistant's backup manager can lose track of this integration's backup agent across that reload's unload/setup window, leaving it stuck under "Unavailable locations" in Settings > Backups until a full restart.
+- A reconfigure that does change connection details, folder, or backup path can't skip that reload, so it now warns immediately that Resilio Backup may briefly disappear from Backup Locations, and posts a second reminder to check Locations after your next full Home Assistant restart.
 
 ## [0.1.0] - 2026-08-30
 
