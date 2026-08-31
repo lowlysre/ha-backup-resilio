@@ -114,6 +114,7 @@ async def test_config_flow_create_new_folder(hass, mock_client) -> None:
 
 async def test_config_flow_folder_options_show_state_and_peers(hass, mock_client) -> None:
     """The folder picker labels show a sync-state symbol and peer counts."""
+    assert mock_client is not None
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
     )
