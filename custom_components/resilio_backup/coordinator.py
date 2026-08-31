@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import (
     ResilioApiClient,
@@ -41,6 +43,7 @@ class ResilioFolderStatus:
     files: int
     peers: int
     state: str
+    last_success: datetime = field(default_factory=dt_util.utcnow)
 
 
 class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
@@ -87,6 +90,7 @@ class ResilioDataUpdateCoordinator(DataUpdateCoordinator[ResilioFolderStatus]):
             files=_safe_int(folder.get("files")),
             peers=_safe_int(folder.get("peers")),
             state=derive_sync_state(folder),
+            last_success=dt_util.utcnow(),
         )
         self._fire_change_events(status)
         return status

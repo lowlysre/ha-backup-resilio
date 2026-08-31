@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from custom_components.resilio_backup.coordinator import ResilioFolderStatus
 from custom_components.resilio_backup.sensor import (
     ResilioFileCountSensor,
     ResilioFolderSizeSensor,
+    ResilioLastUpdatedSensor,
     ResilioPeerCountSensor,
     ResilioSyncStateSensor,
 )
 from tests.common import build_mock_entry
+
+LAST_SUCCESS = datetime(2026, 8, 30, 23, 0, 0, tzinfo=timezone.utc)
 
 
 def build_coordinator(state: str = "in_sync") -> SimpleNamespace:
@@ -25,6 +29,7 @@ def build_coordinator(state: str = "in_sync") -> SimpleNamespace:
             files=16,
             peers=3,
             state=state,
+            last_success=LAST_SUCCESS,
         ),
         last_update_success=True,
     )
@@ -56,3 +61,11 @@ def test_size_file_and_peer_sensors(hass) -> None:
     peer_count_sensor = ResilioPeerCountSensor(coordinator, entry)
     assert peer_count_sensor.native_value == 3
     assert peer_count_sensor.icon == "mdi:account-switch"
+
+
+def test_last_updated_sensor(hass) -> None:
+    """The last-updated sensor exposes the coordinator's last success timestamp."""
+    entry = build_mock_entry(hass)
+    sensor = ResilioLastUpdatedSensor(build_coordinator(), entry)
+    assert sensor.native_value == LAST_SUCCESS
+    assert sensor.icon == "mdi:clock-check-outline"

@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from custom_components.resilio_backup.api import (
     ResilioAuthError,
@@ -48,6 +49,7 @@ async def test_coordinator_success(hass) -> None:
     assert data.files == 16
     assert data.peers == 3
     assert data.state == "in_sync"
+    assert data.last_success <= dt_util.utcnow()
 
 
 async def test_coordinator_peers_as_list(hass) -> None:
