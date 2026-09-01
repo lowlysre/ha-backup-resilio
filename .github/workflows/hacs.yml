@@ -27,10 +27,6 @@ jobs:
         with:
           persist-credentials: false
       - name: HACS validation
-        # HACS requires a public repo to fetch hacs.json/manifest.json over
-        # raw.githubusercontent.com; this repo is private for now, so the
-        # fetch 404s and validation can't pass. Non-blocking until it's public.
-        continue-on-error: true
         uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
         with:
           category: integration
