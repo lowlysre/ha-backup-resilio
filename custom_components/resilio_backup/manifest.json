@@ -15,5 +15,5 @@
   "requirements": [
     "qrcode[pil]==8.2"
   ],
-  "version": "0.1.0"
+  "version": "1.1.0"
 }
