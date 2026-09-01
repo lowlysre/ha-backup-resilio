@@ -14,6 +14,7 @@ from homeassistant.const import (
     Platform,
 )
 from homeassistant.core import Event, HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .api import ResilioApiClient
@@ -27,6 +28,8 @@ from .const import (
 from .coordinator import ResilioBackupData, ResilioConfigEntry, ResilioDataUpdateCoordinator
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def _async_handle_pending_locations_check(hass: HomeAssistant, _event: Event) -> None:
