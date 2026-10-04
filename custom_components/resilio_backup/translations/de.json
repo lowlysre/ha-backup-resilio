@@ -10,6 +10,8 @@
       "cannot_connect": "Verbindung zur Resilio-API fehlgeschlagen.",
       "invalid_auth": "Die Resilio-Zugangsdaten wurden abgelehnt.",
       "no_folders": "Es sind noch keine Resilio-Ordner verfügbar. Wähle \"Neuen Ordner erstellen\", um fortzufahren.",
+      "invalid_backup_path": "Dieser Pfad ist auf dem System, auf dem Home Assistant läuft, nicht gültig. Verwende in einem Container den Pfad, wie er im Container eingebunden ist (z. B. /backups), nicht den Host-Pfad.",
+      "backup_path_in_config": "Dieser Pfad liegt im Konfigurationsordner von Home Assistant, daher würde jedes Backup die vorherigen enthalten. Wähle einen separaten Speicherort.",
       "path_mismatch": "Dieser Pfad stimmt nicht mit dem eigenen Pfad des Resilio-Ordners überein, daher werden hier geschriebene Backups nicht zu Peers repliziert. Erneut senden, um ihn trotzdem zu verwenden.",
       "unknown": "Unerwarteter Fehler."
     },

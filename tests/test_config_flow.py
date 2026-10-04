@@ -14,6 +14,7 @@ from custom_components.resilio_backup.api import (
     ResilioAuthError,
     ResilioConnectionError,
 )
+from custom_components.resilio_backup import config_flow as config_flow_module
 from custom_components.resilio_backup.config_flow import (
     CREATE_NEW_VALUE,
     ResilioBackupConfigFlow,
@@ -29,6 +30,11 @@ from custom_components.resilio_backup.const import (
 )
 from tests.common import MOCK_FOLDER, MOCK_USER_INPUT, build_mock_entry
 
+
+@pytest.fixture(autouse=True)
+def windows_host(monkeypatch):
+    """Existing tests use Windows-style paths; model a Windows host by default."""
+    monkeypatch.setattr(config_flow_module, "_IS_WINDOWS", True)
 
 def build_flow(hass) -> ResilioBackupConfigFlow:
     """Build a flow with stored user credentials for direct step tests."""
@@ -406,6 +412,53 @@ async def test_backup_path_matching_folder_skips_warning(hass, mock_client) -> N
     result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_backup_path_rejects_windows_path_on_posix_host(
+    hass, mock_client, monkeypatch
+) -> None:
+    """A host-style Windows path inside a Linux container is rejected, not confirmed."""
+    assert mock_client is not None
+    monkeypatch.setattr(config_flow_module, "_IS_WINDOWS", False)
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    for _ in range(2):
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: "C:\\Users\\77\\resilio_hass_backups"}
+        )
+        assert result["errors"] == {CONF_BACKUP_PATH: "invalid_backup_path"}
+
+
+async def test_backup_path_rejects_path_inside_config_dir(
+    hass, mock_client, monkeypatch
+) -> None:
+    """A backup path inside the HA config dir would be re-backed-up recursively."""
+    assert mock_client is not None
+    monkeypatch.setattr(config_flow_module, "_IS_WINDOWS", False)
+    monkeypatch.setattr(hass.config, "config_dir", "/config")
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    for path in ("/config", "/config/backups"):
+        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: path})
+        assert result["errors"] == {CONF_BACKUP_PATH: "backup_path_in_config"}
+
+
+async def test_backup_path_accepts_container_path_with_mismatch_warning(
+    hass, mock_client, monkeypatch
+) -> None:
+    """A valid container path still gets the normal replication warning."""
+    assert mock_client is not None
+    monkeypatch.setattr(config_flow_module, "_IS_WINDOWS", False)
+    monkeypatch.setattr(hass.config, "config_dir", "/config")
+    flow = build_flow(hass)
+    setattr(flow, "_folder", MOCK_FOLDER)
+
+    first = await flow.async_step_backup_path({CONF_BACKUP_PATH: "/backups"})
+    assert first["errors"] == {CONF_BACKUP_PATH: "path_mismatch"}
+    second = await flow.async_step_backup_path({CONF_BACKUP_PATH: "/backups"})
+    assert second["type"] is FlowResultType.CREATE_ENTRY
 
 
 async def test_backup_path_posts_peer_invite_notification(hass, mock_client) -> None:

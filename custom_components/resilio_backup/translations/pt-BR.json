@@ -10,6 +10,8 @@
       "cannot_connect": "Falha ao conectar à API do Resilio.",
       "invalid_auth": "As credenciais do Resilio foram rejeitadas.",
       "no_folders": "Ainda não há pastas do Resilio disponíveis. Escolha \"Criar uma nova pasta\" para continuar.",
+      "invalid_backup_path": "Este caminho não é válido para o sistema em que o Home Assistant está rodando. Em um contêiner, use o caminho como está montado dentro do contêiner (ex.: /backups), não o caminho do host.",
+      "backup_path_in_config": "Este caminho está dentro da pasta de configuração do Home Assistant, então cada backup incluiria os anteriores. Escolha um local separado.",
       "path_mismatch": "Este caminho não corresponde ao caminho próprio da pasta do Resilio, então os backups gravados aqui não serão replicados para os pares. Envie novamente para usá-lo mesmo assim.",
       "unknown": "Erro inesperado."
     },

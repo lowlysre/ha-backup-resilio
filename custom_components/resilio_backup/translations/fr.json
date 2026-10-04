@@ -10,6 +10,8 @@
       "cannot_connect": "Échec de la connexion à l'API Resilio.",
       "invalid_auth": "Les identifiants Resilio ont été rejetés.",
       "no_folders": "Aucun dossier Resilio n'est encore disponible. Choisissez \"Créer un nouveau dossier\" pour continuer.",
+      "invalid_backup_path": "Ce chemin n'est pas valide pour le système sur lequel Home Assistant s'exécute. Dans un conteneur, utilisez le chemin tel qu'il est monté dans le conteneur (p. ex. /backups), pas le chemin de l'hôte.",
+      "backup_path_in_config": "Ce chemin se trouve dans le dossier de configuration de Home Assistant : chaque sauvegarde inclurait donc les précédentes. Choisissez un emplacement distinct.",
       "path_mismatch": "Ce chemin ne correspond pas au chemin propre du dossier Resilio, donc les sauvegardes écrites ici ne seront pas répliquées vers les pairs. Soumettez à nouveau pour l'utiliser quand même.",
       "unknown": "Erreur inattendue."
     },

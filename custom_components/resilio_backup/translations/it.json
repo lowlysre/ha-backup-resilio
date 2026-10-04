@@ -10,6 +10,8 @@
       "cannot_connect": "Connessione all'API Resilio non riuscita.",
       "invalid_auth": "Le credenziali Resilio sono state rifiutate.",
       "no_folders": "Non sono ancora disponibili cartelle Resilio. Scegli \"Crea una nuova cartella\" per continuare.",
+      "invalid_backup_path": "Questo percorso non è valido per il sistema su cui gira Home Assistant. In un container, usa il percorso così come è montato nel container (es. /backups), non il percorso dell'host.",
+      "backup_path_in_config": "Questo percorso si trova nella cartella di configurazione di Home Assistant, quindi ogni backup includerebbe i precedenti. Scegli una posizione separata.",
       "path_mismatch": "Questo percorso non corrisponde al percorso proprio della cartella Resilio, quindi i backup scritti qui non verranno replicati ai peer. Invia di nuovo per usarlo comunque.",
       "unknown": "Errore imprevisto."
     },

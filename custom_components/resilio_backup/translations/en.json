@@ -10,6 +10,8 @@
       "cannot_connect": "Failed to connect to the Resilio API.",
       "invalid_auth": "The Resilio credentials were rejected.",
       "no_folders": "No Resilio folders are available yet. Pick \"Create a new folder\" to continue.",
+      "invalid_backup_path": "This path isn't valid for the system Home Assistant runs on. In a container, use the path as mounted inside the container (e.g. /backups), not the host path.",
+      "backup_path_in_config": "This path is inside Home Assistant's config folder, so every backup would include the previous ones. Choose a separate location.",
       "path_mismatch": "This path doesn't match the Resilio folder's own path, so backups written here won't replicate to peers. Submit again to use it anyway.",
       "unknown": "Unexpected error."
     },
