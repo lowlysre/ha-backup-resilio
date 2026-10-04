@@ -36,6 +36,7 @@ def windows_host(monkeypatch):
     """Existing tests use Windows-style paths; model a Windows host by default."""
     monkeypatch.setattr(config_flow_module, "_IS_WINDOWS", True)
 
+
 def build_flow(hass) -> ResilioBackupConfigFlow:
     """Build a flow with stored user credentials for direct step tests."""
     flow = ResilioBackupConfigFlow()
@@ -609,7 +610,7 @@ async def test_reconfigure_flow_updates_connection(hass, mock_client) -> None:
     folder/backup path (preselected as defaults) before applying the update.
     """
     assert mock_client is not None
-    entry = build_mock_entry(hass)
+    entry = build_mock_entry(hass, backup_path="C:\\HA\\Existing")
     entry.add_to_hass(hass)
     original_backup_path = entry.data[CONF_BACKUP_PATH]
 
@@ -728,7 +729,7 @@ async def test_reconfigure_flow_unchanged_values_skips_reload(hass, mock_client)
     cycle, and a same-values reconfigure has no reason to trigger one.
     """
     assert mock_client is not None
-    entry = build_mock_entry(hass)
+    entry = build_mock_entry(hass, backup_path="C:\\HA\\Existing")
     entry.add_to_hass(hass)
     original_backup_path = entry.data[CONF_BACKUP_PATH]
 
@@ -765,7 +766,7 @@ async def test_reconfigure_flow_unchanged_values_skips_reload(hass, mock_client)
 async def test_reconfigure_flow_real_change_warns_about_locations(hass, mock_client) -> None:
     """A real value change sets the pending-locations flag and warns immediately."""
     assert mock_client is not None
-    entry = build_mock_entry(hass)
+    entry = build_mock_entry(hass, backup_path="C:\\HA\\Existing")
     entry.add_to_hass(hass)
     original_backup_path = entry.data[CONF_BACKUP_PATH]
 

@@ -126,6 +126,7 @@ def _backup_path_error(path: str, config_dir: str) -> str | None:
         return "backup_path_in_config"
     return None
 
+
 def _is_within_folder(path: str, folder_path: str) -> bool:
     """Check whether `path` is `folder_path` itself or nested inside it."""
     sep = "\\" if "\\" in folder_path else "/"
