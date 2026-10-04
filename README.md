@@ -63,6 +63,8 @@ On every platform the WebUI/HTTP API defaults to listening on `127.0.0.1`, so if
 
 `backup_path` is the filesystem path Home Assistant writes to. In the simple local case it matches the Resilio folder path. If the API is remote or reverse proxied, use the path the Home Assistant process can actually reach.
 
+If Home Assistant runs in a container, mount the backup folder into the container and enter the path as the container sees it (for example /backups), not the host path. The setup form rejects paths in the wrong style for the host, and paths inside Home Assistant's own config folder, because every backup would then include the previous ones.
+
 ## Documentation
 
 - [Usage](docs/usage.md): entities, automation examples, and options.

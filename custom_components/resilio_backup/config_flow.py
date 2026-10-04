@@ -5,6 +5,8 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import os
+from pathlib import PurePosixPath, PureWindowsPath
 import re
 from typing import Any, Self, override
 
@@ -101,6 +103,28 @@ def _strip_url_scheme(host: str) -> str:
     host = host.strip()
     host = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", host)
     return host.split("/", 1)[0]
+
+
+_IS_WINDOWS = os.name == "nt"
+
+
+def _backup_path_error(path: str, config_dir: str) -> str | None:
+    """Return an error key if `path` can't safely hold backups on this host.
+
+    A path in the wrong OS style (e.g. a ``C:`` drive path inside a Linux
+    container) would be created as a relative directory under HA's config
+    folder, and every later backup would then include the previous ones.
+    """
+    pure = PureWindowsPath if _IS_WINDOWS else PurePosixPath
+    candidate = pure(path)
+    if not candidate.is_absolute():
+        return "invalid_backup_path"
+    base = pure(config_dir)
+    if _IS_WINDOWS:
+        candidate, base = pure(path.lower()), pure(config_dir.lower())
+    if candidate == base or base in candidate.parents:
+        return "backup_path_in_config"
+    return None
 
 
 def _is_within_folder(path: str, folder_path: str) -> bool:
@@ -407,6 +431,10 @@ class ResilioBackupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if not backup_path:
                 errors[CONF_BACKUP_PATH] = "required"
+            elif path_error := _backup_path_error(
+                backup_path, self.hass.config.config_dir
+            ):
+                errors[CONF_BACKUP_PATH] = path_error
             elif (
                 folder_path
                 and backup_path != folder_path

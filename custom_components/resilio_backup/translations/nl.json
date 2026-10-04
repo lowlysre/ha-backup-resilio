@@ -10,6 +10,8 @@
       "cannot_connect": "Kan geen verbinding maken met de Resilio-API.",
       "invalid_auth": "De Resilio-inloggegevens zijn geweigerd.",
       "no_folders": "Er zijn nog geen Resilio-mappen beschikbaar. Kies \"Nieuwe map maken\" om door te gaan.",
+      "invalid_backup_path": "Dit pad is niet geldig voor het systeem waarop Home Assistant draait. Gebruik in een container het pad zoals het in de container is gemount (bijv. /backups), niet het hostpad.",
+      "backup_path_in_config": "Dit pad staat in de configuratiemap van Home Assistant, waardoor elke back-up de vorige zou bevatten. Kies een aparte locatie.",
       "path_mismatch": "Dit pad komt niet overeen met het eigen pad van de Resilio-map, dus back-ups die hier worden geschreven, worden niet naar peers gerepliceerd. Verzend opnieuw om het toch te gebruiken.",
       "unknown": "Onverwachte fout."
     },
