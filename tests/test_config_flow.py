@@ -69,7 +69,7 @@ async def test_config_flow_existing_folder(hass, mock_client) -> None:
 
     # ...and a repeat submission of the same path confirms it.
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_BACKUP_PATH: "C:\\HA\\Backups"}
+        result["flow_id"], {CONF_BACKUP_PATH: "C:\\HA\\Backups", CONF_SEND_PEER_INVITE: True}
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -666,7 +666,7 @@ async def test_reconfigure_flow_reports_peer_invite_sent(hass, mock_client) -> N
         ) as notify,
     ):
         result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_BACKUP_PATH: MOCK_FOLDER["path"]}
+            result["flow_id"], {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
         )
         await hass.async_block_till_done()
 
