@@ -327,10 +327,13 @@ async def test_async_add_folder_server_error() -> None:
 async def test_async_get_share_link_success() -> None:
     """A successful getsynclink call returns its ``value`` link as-is."""
     link = "https://link.resilio.com/#f=probe&sz=0&t=1&s=SECRET&i=IDENT&e=1788449679&v=2.8&a=3"
-    client, _session = build_client(
+    client, session = build_client(
         [token_response(), FakeResponse(json=webui_action({"value": link}))]
     )
     assert await client.async_get_share_link("folder123", "probe") == link
+    action_call = next(call for call in session.calls if "token.html" not in call[0])
+    assert action_call[1]["action"] == "getsynclink"
+    assert action_call[1]["clicklimit"] == 1
 
 
 async def test_async_get_share_link_empty_value() -> None:
