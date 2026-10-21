@@ -20,7 +20,7 @@
           "send_peer_invite": "Enviar uma notificação de convite de par"
         },
         "data_description": {
-          "send_peer_invite": "Adiciona uma notificação com um link de adesão e código QR para esta pasta. Qualquer pessoa com o link pode entrar como par, então desative isso se você já adicionou os pares de que precisa."
+          "send_peer_invite": "Adiciona uma notificação com um link de adesão de uso único (leitura e gravação) e código QR. As notificações são visíveis a todos os usuários do Home Assistant e os backups contêm segredos; ative apenas se confiar em todos."
         },
         "description": "Este é o caminho local no qual o Home Assistant grava os arquivos `.tar`/`.json` de cada backup. O Resilio então replica tudo o que encontra dentro de sua própria pasta para seus outros dispositivos, então este caminho normalmente deve ser o caminho próprio da pasta do Resilio (pré-preenchido abaixo) ou um local dentro dela.\n\nPasta selecionada: **{folder_name}** ({folder_path})",
         "title": "Escolher caminho do backup"

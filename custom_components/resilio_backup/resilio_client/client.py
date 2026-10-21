@@ -227,7 +227,10 @@ class ResilioClient:
         permission: int = 3,
         timelimit: int = 7 * 24 * 3600,
     ) -> str:
-        """Generate a peer-invite link for a folder, or "" if none was produced.
+        """Generate a single-use peer-invite link, or "" if none was produced.
+
+        Links are limited to one click (``clicklimit`` 1) since the folder
+        holds backups with secrets.
 
         Captured live against an unlicensed ``resilio/sync`` container
         (see ``tools/resilio_capture``, lowlysre/ha-backup-resilio#5):
@@ -250,7 +253,7 @@ class ResilioClient:
                 "timelimit": timelimit,
                 "type": "copy",
                 "linktype": "https",
-                "clicklimit": 0,
+                "clicklimit": 1,
                 "askapproval": 0,
             },
         )

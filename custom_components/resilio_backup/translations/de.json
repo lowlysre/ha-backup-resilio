@@ -20,7 +20,7 @@
           "send_peer_invite": "Peer-Einladungsbenachrichtigung senden"
         },
         "data_description": {
-          "send_peer_invite": "Fügt eine Benachrichtigung mit einem Beitrittslink und QR-Code für diesen Ordner hinzu. Jeder mit dem Link kann als Peer beitreten. Deaktiviere dies, wenn du bereits alle benötigten Peers hinzugefügt hast."
+          "send_peer_invite": "Fügt eine Benachrichtigung mit einem einmaligen Beitrittslink (Lesen/Schreiben) und QR-Code hinzu. Benachrichtigungen sind für alle Home-Assistant-Benutzer sichtbar und Backups enthalten Geheimnisse – aktiviere dies nur, wenn du allen vertraust."
         },
         "description": "Dies ist der lokale Pfad, in den Home Assistant die `.tar`/`.json`-Dateien jedes Backups schreibt. Resilio repliziert dann alles, was sich in seinem eigenen Ordner befindet, auf deine anderen Geräte. Dieser Pfad sollte daher normalerweise der eigene Pfad des Resilio-Ordners sein (unten vorausgefüllt) oder sich innerhalb davon befinden.\n\nAusgewählter Ordner: **{folder_name}** ({folder_path})",
         "title": "Backup-Pfad wählen"

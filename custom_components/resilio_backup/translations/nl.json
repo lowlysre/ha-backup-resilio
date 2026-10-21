@@ -20,7 +20,7 @@
           "send_peer_invite": "Een peer-uitnodigingsmelding verzenden"
         },
         "data_description": {
-          "send_peer_invite": "Voegt een melding toe met een deelnamelink en QR-code voor deze map. Iedereen met de link kan als peer deelnemen, dus schakel dit uit als je al alle peers hebt toegevoegd die je nodig hebt."
+          "send_peer_invite": "Voegt een melding toe met een eenmalige deelnamelink (lezen/schrijven) en QR-code. Meldingen zijn zichtbaar voor alle Home Assistant-gebruikers en back-ups bevatten geheimen; schakel dit alleen in als je ze allemaal vertrouwt."
         },
         "description": "Dit is het lokale pad waarnaar Home Assistant de `.tar`/`.json`-bestanden van elke back-up schrijft. Resilio repliceert vervolgens alles wat het in zijn eigen map vindt naar je andere apparaten, dus dit pad moet normaal gesproken het eigen pad van de Resilio-map zijn (hieronder vooraf ingevuld) of een locatie daarbinnen.\n\nGeselecteerde map: **{folder_name}** ({folder_path})",
         "title": "Back-uppad kiezen"

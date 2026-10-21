@@ -20,7 +20,7 @@
           "send_peer_invite": "Invia una notifica di invito peer"
         },
         "data_description": {
-          "send_peer_invite": "Aggiunge una notifica con un link di invito e un codice QR per questa cartella. Chiunque abbia il link può unirsi come peer, quindi disattivalo se hai già aggiunto i peer di cui hai bisogno."
+          "send_peer_invite": "Aggiunge una notifica con un link di invito monouso (lettura/scrittura) e un codice QR. Le notifiche sono visibili a tutti gli utenti di Home Assistant e i backup contengono segreti; attivalo solo se ti fidi di tutti."
         },
         "description": "Questo è il percorso locale in cui Home Assistant scrive i file `.tar`/`.json` di ogni backup. Resilio replica quindi tutto ciò che trova nella propria cartella sugli altri dispositivi, quindi questo percorso dovrebbe normalmente essere il percorso proprio della cartella Resilio (precompilato di seguito) o una posizione al suo interno.\n\nCartella selezionata: **{folder_name}** ({folder_path})",
         "title": "Scegli il percorso di backup"
