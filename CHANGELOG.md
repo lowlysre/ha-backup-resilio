@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Peer-invite notification is now opt-in (off by default), and the generated
+  invite link is single-use (`clicklimit` 1).
+
 ### Added
 
 - Custom icons for the peer count, file count, and sync state sensors.

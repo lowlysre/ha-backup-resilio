@@ -403,7 +403,9 @@ async def test_backup_path_matching_folder_skips_warning(hass, mock_client) -> N
     flow = build_flow(hass)
     setattr(flow, "_folder", MOCK_FOLDER)
 
-    result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+    result = await flow.async_step_backup_path(
+        {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
+    )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
@@ -417,7 +419,9 @@ async def test_backup_path_posts_peer_invite_notification(hass, mock_client) -> 
     with patch(
         "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
     ) as notify:
-        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_called_once()
@@ -435,7 +439,9 @@ async def test_backup_path_peer_invite_failure_does_not_block_entry(hass, mock_c
     with patch(
         "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
     ) as notify:
-        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_not_called()
@@ -450,7 +456,9 @@ async def test_backup_path_empty_share_link_skips_notification(hass, mock_client
     with patch(
         "custom_components.resilio_backup.config_flow.persistent_notification.async_create"
     ) as notify:
-        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_not_called()
@@ -471,7 +479,9 @@ async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client)
             side_effect=RuntimeError("boom"),
         ),
     ):
-        result = await flow.async_step_backup_path({CONF_BACKUP_PATH: MOCK_FOLDER["path"]})
+        result = await flow.async_step_backup_path(
+            {CONF_BACKUP_PATH: MOCK_FOLDER["path"], CONF_SEND_PEER_INVITE: True}
+        )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     notify.assert_called_once()
@@ -480,8 +490,8 @@ async def test_backup_path_qr_render_failure_still_posts_link(hass, mock_client)
     assert "data:image/png;base64" not in message
 
 
-async def test_backup_path_send_peer_invite_defaults_true(hass, mock_client) -> None:
-    """The peer-invite checkbox defaults to on, preserving prior behavior."""
+async def test_backup_path_send_peer_invite_defaults_false(hass, mock_client) -> None:
+    """The peer-invite checkbox defaults to off (opt-in)."""
     assert mock_client is not None
     flow = build_flow(hass)
     setattr(flow, "_folder", MOCK_FOLDER)
@@ -493,7 +503,7 @@ async def test_backup_path_send_peer_invite_defaults_true(hass, mock_client) -> 
         for key in result["data_schema"].schema
         if getattr(key, "schema", None) == CONF_SEND_PEER_INVITE
     )
-    assert invite_field.default() is True
+    assert invite_field.default() is False
 
 
 async def test_backup_path_send_peer_invite_false_skips_notification(hass, mock_client) -> None:
