@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.1] - 2026-10-21
 
 ### Security
 
@@ -19,9 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warns (without blocking) when the entered backup path doesn't match the
   selected Resilio folder's own path, and offers to post a peer-invite link
   (with a QR code) as a persistent notification once the entry is created.
-- A "Send a peer-invite notification" checkbox on the backup path step (on by
-  default), so you can skip minting a peer-invite link and QR code on entries
-  where you don't want an active invite lying around in notifications.
+- A "Send a peer-invite notification" checkbox on the backup path step (off by
+  default), so a peer-invite link and QR code are only minted when requested.
 - `scan_interval` option to configure how often the coordinator polls the Resilio Sync API (default 300s, minimum 10s).
 - Reauthentication flow, triggered when Resilio rejects the configured credentials.
 - Reconfigure flow to update connection details without removing and re-adding the integration.
